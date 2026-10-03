@@ -1,25 +1,27 @@
 // Synthetic, browser-only data for designing and testing the Vue interface.
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
-export const statuses = {
-  draft: "محفوظ",
-  published: "منشور",
-  reserved: "بانتظار المندوب",
-  approaching: "المندوب في الطريق إلى التاجر",
-  arrived: "المندوب وصل",
-  waiting: "بانتظار الاستلام",
-  received: "تم الاستلام",
-  transit: "قيد التوصيل",
-  at_customer: "وصل إلى الزبون",
-  delivered: "تم التسليم",
-  failed: "تعذر التسليم",
-  retry: "إعادة محاولة التوصيل",
-  return_pending: "بانتظار الإرجاع",
-  returning: "قيد الإرجاع",
-  partial_pending: "تسليم جزئي — بانتظار إرجاع المتبقي",
-  returned: "تم الإرجاع",
-  cancelled: "ملغي",
-  completed: "منتهي",
-};
+import { statusLabel } from "./orderStatuses.js";
+export { statuses } from "./orderStatuses.js";
+const workflowStages = [
+  "draft",
+  "published",
+  "reserved",
+  "approaching",
+  "arrived",
+  "waiting",
+  "received",
+  "transit",
+  "at_customer",
+  "delivered",
+  "failed",
+  "retry",
+  "return_pending",
+  "returning",
+  "partial_pending",
+  "returned",
+  "cancelled",
+  "completed",
+];
 export function createDemoData() {
   const location = { lat: 33.3, lng: 44.43 };
   const merchant = {
@@ -136,7 +138,7 @@ export function createDemoData() {
   ];
   const orders = Array.from(
     { length: 54 },
-    (_, index) => Object.keys(statuses)[index % 18],
+    (_, index) => workflowStages[index % workflowStages.length],
   ).map((status, index) => ({
     id: "ORD-DEMO-" + String(index + 1).padStart(4, "0"),
     merchant: merchant.id,
@@ -202,19 +204,20 @@ export function createDemoData() {
       status === "partial_pending"
         ? { count: 1, amount: 5000, approved: true }
         : null,
+    partialDelivered: status === "partial_pending",
     returnArrived: status === "returning",
     returnReceived: false,
     history: [
       {
         at,
         actor: "DEMO",
-        text: "بيانات تجريبية — " + statuses[status],
+        text: "بيانات تجريبية — " + statusLabel(status),
         status,
       },
     ],
   }));
   const vehicles = ["motorcycle", "sedan", "refrigerated"];
-  const additions = Object.keys(statuses).flatMap((status, stateIndex) =>
+  const additions = workflowStages.flatMap((status, stateIndex) =>
     Array.from({ length: 20 }, (_, index) => {
       const order = structuredClone(orders.find((o) => o.status === status));
       const number = stateIndex * 20 + index + 1;
@@ -269,7 +272,7 @@ export function createDemoData() {
           {
             at: date,
             actor: "DEMO",
-            text: "طلب تجريبي — " + statuses[status],
+            text: "طلب تجريبي — " + statusLabel(status),
             status,
           },
         ],

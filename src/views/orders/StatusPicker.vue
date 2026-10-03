@@ -1,8 +1,34 @@
 <script setup>
+import { computed } from "vue";
+import {
+  statuses,
+  statusDescription,
+  filterOrders,
+} from "../../services/orderStatuses.js";
 import MaterialIcon from "../shell/MaterialIcon.vue";
 
 defineOptions({ inheritAttrs: false });
-defineProps({ model: { type: Object, required: true } });
+const statusIcons = {
+  all: "filter_list",
+  draft: "edit_note",
+  delivered: "check_circle",
+  returning: "assignment_return",
+  partial_pending: "assignment_return",
+  cancelled: "cancel",
+  completed: "task_alt",
+  retry: "schedule",
+  failed: "error",
+};
+const props = defineProps({ model: { type: Object, required: true } });
+const counts = computed(() =>
+  Object.fromEntries(
+    props.model.options.map(([filter]) => [
+      filter,
+      filterOrders(props.model.baseOrders(), { ...props.model.state, filter })
+        .length,
+    ]),
+  ),
+);
 </script>
 <template>
   <div class="status-picker">
@@ -21,10 +47,8 @@ defineProps({ model: { type: Object, required: true } });
       />
       <span
         class="status-trigger-label"
-        :title="model.state.S.statuses[model.state.filter] || 'جميع الحالات'"
-        >{{
-          model.state.S.statuses[model.state.filter] || "جميع الحالات"
-        }}</span
+        :title="statuses[model.state.filter] || 'جميع الحالات'"
+        >{{ statuses[model.state.filter] || "جميع الحالات" }}</span
       >
       <span class="status-trigger-count"
         ><svg viewBox="0 0 28 28" class="status-count-number">
@@ -34,15 +58,7 @@ defineProps({ model: { type: Object, required: true } });
             text-anchor="middle"
             dominant-baseline="central"
           >
-            {{
-              model
-                .baseOrders()
-                .filter(
-                  (o) =>
-                    model.state.filter === "all" ||
-                    o.status === model.state.filter,
-                ).length
-            }}
+            {{ counts[model.state.filter] }}
           </text>
         </svg></span
       >
@@ -57,7 +73,7 @@ defineProps({ model: { type: Object, required: true } });
         حالة الشحنة <span>عدد الطلبات</span>
       </div>
       <div role="listbox" aria-label="حالة الشحنة">
-        <template v-for="[v, label] in model.options"
+        <template v-for="[v, label] in model.options" :key="v"
           ><button
             role="option"
             :aria-selected="model.state.filter === v"
@@ -65,26 +81,12 @@ defineProps({ model: { type: Object, required: true } });
             data-action="filter"
             :data-value="v"
             :class="'status-option status-' + v"
+            :title="statusDescription(v)"
           >
             <span
               class="status-icon material-symbols-outlined"
               aria-hidden="true"
-              ><template v-if="v === 'all'">filter_list</template>
-              <template v-else
-                ><template v-if="v.startsWith('return')"
-                  >assignment_return</template
-                >
-                <template v-else
-                  ><template v-if="v === 'delivered'">check_circle</template>
-                  <template v-else
-                    ><template v-if="v === 'cancelled'">cancel</template>
-                    <template v-else
-                      ><template v-if="v === 'draft'">edit_note</template>
-                      <template v-else>local_shipping</template></template
-                    ></template
-                  ></template
-                ></template
-              ></span
+              >{{ statusIcons[v] || "local_shipping" }}</span
             >
             <span class="status-option-label">{{ label }}</span>
             <span
@@ -92,10 +94,7 @@ defineProps({ model: { type: Object, required: true } });
               aria-hidden="true"
               >check</span
             >
-            <span class="status-badge">{{
-              model.baseOrders().filter((o) => v === "all" || o.status === v)
-                .length
-            }}</span>
+            <span class="status-badge">{{ counts[v] }}</span>
           </button></template
         >
       </div>

@@ -1,4 +1,9 @@
 <script setup>
+import {
+  orderStatus,
+  statusLabel,
+  statusDescription,
+} from "../../services/orderStatuses.js";
 import DetailRow from "../ui/DetailRow.vue";
 import MaterialIcon from "../shell/MaterialIcon.vue";
 import ActionButton from "../ui/ActionButton.vue";
@@ -14,9 +19,12 @@ defineProps({ model: { type: Object, required: true } });
     ><p class="status-note">طلب تجريبي محلي؛ لا يمثل شحنة حقيقية.</p></template
   >
 
-  <span :class="'chip ' + model.o.status">{{
-    model.state.S.statuses[model.o.status]
-  }}</span>
+  <span
+    :class="'chip ' + orderStatus(model.o)"
+    :title="statusDescription(model.o)"
+    >{{ statusLabel(model.o) }}</span
+  >
+  <p class="muted order-status-description">{{ statusDescription(model.o) }}</p>
   <DetailRow
     :model="{
       label: 'المرسل',

@@ -1,6 +1,6 @@
 <script setup>
 import { readTracking } from "../services/tracking.js";
-import { statuses } from "../services/demoData.js";
+import { statusLabel, statusDescription } from "../services/orderStatuses.js";
 const data = readTracking(location.hash);
 const date = (x) =>
   Number.isFinite(Date.parse(x)) ? new Date(x).toLocaleString("en-GB") : "";
@@ -11,14 +11,15 @@ const date = (x) =>
     <h1>متابعة الطلب</h1>
     <template v-if="data"
       ><h2>{{ data.id }}</h2>
-      <p class="status-note">{{ statuses[data.status] || "غير معروف" }}</p>
+      <p class="status-note">{{ statusLabel(data.status) }}</p>
+      <p>{{ statusDescription(data.status) }}</p>
       <p>
         نسخة حالة مشارَكة بتاريخ {{ date(data.at) }}. ليست تتبعاً مباشراً؛ اطلب
         رابطاً محدثاً من المرسل.
       </p>
       <ol class="timeline">
         <li v-for="(e, i) in data.events" :key="i">
-          {{ statuses[e.status] || "تحديث الطلب" }} — {{ date(e.at) }}
+          {{ statusLabel(e.status) }} — {{ date(e.at) }}
         </li>
       </ol></template
     >

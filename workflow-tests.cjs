@@ -86,7 +86,9 @@ test("partial delivery refunds remaining goods, collects fees once, then closes"
   await t.act(o, "partial_approve");
   await t.login("courier");
   await t.act(o, "partial_confirm", { confirmed: true });
+  assert.equal((await t.state()).orders[0].publicStatus, "partial_pending");
   await t.act(o, "return_start");
+  assert.equal((await t.state()).orders[0].publicStatus, "partial_pending");
   await t.login("merchant");
   const returnCode = (await t.state()).orders.find(
     (x) => x.id === o.id,
@@ -106,8 +108,10 @@ test("partial delivery refunds remaining goods, collects fees once, then closes"
   assert.equal((await t.state()).user.budget, before);
   await t.act(o, "settle_return", { confirmed: true, fees: 3000 });
   assert.equal((await t.state()).user.budget, initial + 8000);
+  assert.equal((await t.state()).orders[0].publicStatus, "partial_pending");
   await t.act(o, "complete");
   assert.equal((await t.state()).orders[0].status, "completed");
+  assert.equal((await t.state()).orders[0].publicStatus, "completed");
 });
 test("batch pickup is atomic, consumes one code, and leaves excluded orders unchanged", async () => {
   const t = await setup();
@@ -601,14 +605,14 @@ test("new recipient without street address can be saved and remembered", async (
   assert.ok((await t.state()).user.customers.some(c => c.name === recipient.name && c.area === recipient.area));
 });
 
-test("merchant cancellation stops after approaching and draft publication is reversible", async () => {
-  for (const status of ['draft', 'published', 'reserved', 'approaching', 'arrived', 'waiting', 'transit']) {
+test("merchant cancellation stops after physical pickup and draft publication is reversible", async () => {
+  for (const status of ['draft', 'published', 'reserved', 'approaching', 'arrived', 'waiting', 'received', 'transit']) {
     const t = await setup();
     const o = await t.create();
     const data = JSON.parse(t.storage.getItem(t.key));
     data.orders.find(x => x.id === o.id).status = status;
     t.storage.setItem(t.key, JSON.stringify(data));
-    if (['draft', 'published', 'reserved', 'approaching'].includes(status)) {
+    if (['draft', 'published', 'reserved', 'approaching', 'arrived', 'waiting'].includes(status)) {
       await t.act(o, 'cancel');
       assert.equal((await t.state()).orders.find(x => x.id === o.id).status, 'cancelled');
     } else await assert.rejects(t.act(o, 'cancel'));
@@ -637,4 +641,55 @@ test("sample device drafts seed once, preserve existing drafts and can save or p
   storage.setItem('wasel-offline-MER-DEMO', '[]');
   assert.equal(readDeviceDrafts(user, storage).length, 0);
   assert.equal(readDeviceDrafts({id:'MER-OTHER'}, storage).length, 0);
+});
+
+test("only the assigned courier can finish a settled order and completion is final", async () => {
+  for (const role of ["merchant", "free"]) {
+    const t = await setup();
+    await t.login(role);
+    const o = await t.create();
+    await t.login("courier");
+    await t.act(o, "reserve");
+    await t.act(o, "depart");
+    assert.equal((await t.state()).orders[0].publicStatus, "reserved");
+    await t.act(o, "arrive");
+    assert.equal((await t.state()).orders[0].publicStatus, "waiting");
+    await t.act(o, "pickup", { code: o.handoverCode, inspected: true, paid: true });
+    assert.equal((await t.state()).orders[0].publicStatus, "transit");
+    await t.act(o, "transit");
+    await t.act(o, "customer_arrive");
+    await assert.rejects(t.act(o, "deliver", { confirmed: true }));
+    await t.act(o, "deliver", { confirmed: true, proof: "تم التسليم للزبون والتحصيل" });
+    assert.equal((await t.state()).orders[0].publicStatus, "delivered");
+    await assert.rejects(t.act(o, "complete"), /التسوية/);
+    await t.act(o, "settle_delivery", { confirmed: true });
+    await t.login(role);
+    await assert.rejects(t.act(o, "complete"));
+    await t.login("courier");
+    await t.act(o, "complete");
+    assert.equal((await t.state()).orders[0].publicStatus, "completed");
+    for (const action of ["complete", "return", "retry", "transit", "deliver"])
+      await assert.rejects(t.act(o, action, { confirmed: true }));
+    await t.login(role);
+    for (const action of ["cancel", "publish", "unpublish"])
+      await assert.rejects(t.act(o, action));
+  }
+});
+
+test("cancelling after arrival invalidates a pickup batch and preserves courier funds", async () => {
+  const t = await setup();
+  const o = await t.create();
+  await t.login("courier");
+  const budget = (await t.state()).user.budget;
+  await t.act(o, "reserve");
+  await t.act(o, "arrive");
+  await t.login("merchant");
+  const batch = await t.api("/api/batch", { action: "create", ids: [o.id] });
+  await t.act(o, "cancel");
+  await t.login("courier");
+  await assert.rejects(t.api("/api/batch", { action: "pickup", code: batch.code, inspected: true, paid: true }));
+  await assert.rejects(t.act(o, "pickup", { code: o.handoverCode, inspected: true, paid: true }));
+  const view = await t.state();
+  assert.equal(view.user.budget, budget);
+  assert.equal(view.orders[0].publicStatus, "cancelled");
 });

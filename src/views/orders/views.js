@@ -32,6 +32,11 @@ import OrderActionForm from "./OrderActionForm.vue";
 import OrderMap from "./OrderMap.vue";
 import CouriersDialog from "./CouriersDialog.vue";
 import OrdersMapDialog from "./OrdersMapDialog.vue";
+import {
+  statuses,
+  orderStatus,
+  filterOrders,
+} from "../../services/orderStatuses.js";
 import { paginate } from "../../services/pagination.js";
 import { trackingLink } from "../../services/tracking.js";
 import {
@@ -63,9 +68,7 @@ export function createOrdersViews(context) {
         ["reserved", "approaching", "arrived", "waiting"].includes(o.status),
       ),
       returns = own.filter((o) =>
-        ["failed", "return_pending", "returning", "partial_pending"].includes(
-          o.status,
-        ),
+        ["failed", "returning", "partial_pending"].includes(orderStatus(o)),
       );
     const showMetric = (title, orders) => ({
       "aria-label": `${title}، ${orders.length} طلب، عرض التفاصيل`,
@@ -80,14 +83,7 @@ export function createOrdersViews(context) {
           }),
         ),
     });
-    const pagination = paginate(
-      own.filter((o) =>
-        state.filter === "all"
-          ? !closed.includes(o.status)
-          : o.status === state.filter,
-      ),
-      state.homePage,
-    );
+    const pagination = paginate(filterOrders(own, state), state.homePage);
     return createView(HomeView, {
       model: {
         u,
@@ -106,10 +102,7 @@ export function createOrdersViews(context) {
   }
   function statusPicker() {
     const { state, baseOrders } = context();
-    const options = [
-      ["all", "جميع الحالات"],
-      ...Object.entries(state.S.statuses),
-    ];
+    const options = [["all", "جميع الحالات"], ...Object.entries(statuses)];
     return createView(StatusPicker, {
       model: {
         state,
@@ -130,12 +123,7 @@ export function createOrdersViews(context) {
   }
   function ordersView() {
     const { baseOrders, state, statusPicker, orderList, refresh } = context();
-    const os = baseOrders().filter(
-      (o) =>
-        (state.filter === "all" || o.status === state.filter) &&
-        (!state.query ||
-          JSON.stringify([o.id, o.recipient, o.sender]).includes(state.query)),
-    );
+    const os = filterOrders(baseOrders(), state);
     const registry = state.screen === "registry";
     const bulkDrafts =
       registry &&
@@ -193,8 +181,7 @@ export function createOrdersViews(context) {
           }
         }
       }
-      if (["draft", "published", "reserved", "approaching"].includes(o.status))
-        add("cancel", "إلغاء الطلب");
+      if (before.includes(o.status)) add("cancel", "إلغاء الطلب");
       if (o.status === "retry" && !o.retryApproved)
         add("approve_retry", "الموافقة على الموعد");
       if (o.status === "at_customer" && o.partial && !o.partial.approved)

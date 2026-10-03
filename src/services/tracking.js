@@ -1,14 +1,29 @@
+import { orderStatus } from "./orderStatuses.js";
+
+function trackingEvents(history = []) {
+  let partialDelivered = false;
+  return history.flatMap((event) => {
+    if (!event || typeof event.status !== "string") return [];
+    partialDelivered ||=
+      event.status === "partial_pending" ||
+      event.publicStatus === "partial_pending";
+    const status =
+      orderStatus(event.publicStatus) ||
+      orderStatus({ status: event.status, partialDelivered });
+    return status ? [{ at: event.at, status }] : [];
+  });
+}
+
 export function trackingLink(
   order,
-  base = globalThis.location?.href || "https://alimohammedali2022.github.io/Wasil-Design/",
+  base = globalThis.location?.href ||
+    "https://alimohammedali2022.github.io/Wasil-Design/",
 ) {
   const safe = {
     id: order.id,
-    status: order.status,
+    status: orderStatus(order),
     at: new Date().toISOString(),
-    events:
-      order.history?.map((h) => ({ at: h.at, status: h.status })).slice(-20) ||
-      [],
+    events: trackingEvents(order.history).slice(-20),
   };
   const encoded = btoa(
     Array.from(new TextEncoder().encode(JSON.stringify(safe)), (b) =>
@@ -32,11 +47,15 @@ export function readTracking(hash) {
         ),
       ),
     );
-    return typeof data.id === "string" &&
-      typeof data.status === "string" &&
-      Array.isArray(data.events)
-      ? data
-      : null;
+    if (
+      typeof data.id !== "string" ||
+      typeof data.status !== "string" ||
+      !Array.isArray(data.events)
+    )
+      return null;
+    const events = trackingEvents(data.events);
+    const status = orderStatus({ status: data.status, history: events });
+    return status ? { id: data.id, at: data.at, status, events } : null;
   } catch {
     return null;
   }

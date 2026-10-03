@@ -1,4 +1,9 @@
 <script setup>
+import {
+  orderStatus,
+  statusLabel,
+  statusDescription,
+} from "../../services/orderStatuses.js";
 import MaterialIcon from "../shell/MaterialIcon.vue";
 import ActionButton from "../ui/ActionButton.vue";
 import VipBanner from "../../components/VipBanner.vue";
@@ -35,9 +40,11 @@ defineProps({ model: { type: Object, required: true } });
             /></span>
             <h3>{{ o.id }}</h3>
           </div>
-          <span :class="'chip ' + o.status">{{
-            model.state.S.statuses[o.status]
-          }}</span>
+          <span
+            :class="'chip ' + orderStatus(o)"
+            :title="statusDescription(o)"
+            >{{ statusLabel(o) }}</span
+          >
         </div>
         <template v-if="o.service === 'vip'"
           ><VipBanner :compact="true"></VipBanner

@@ -1,3 +1,8 @@
+import {
+  orderStatus,
+  statusLabel,
+  workflowEventLabels,
+} from "./orderStatuses.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { accountType, workflowRole } from "./accounts.js";
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
@@ -141,7 +146,11 @@ export function createDemoApi(
   for (const o of data.orders) {
     if (o.status === "returning" && !o.returnArrived && !o.returnCode)
       o.returnCode = String(Math.floor(100000 + Math.random() * 900000));
-    if (/^(?:FREE-)?ORD-DEMO-/.test(o.id) && o.status === "partial_pending")
+    if (
+      o.status === "partial_pending" ||
+      (["returning", "returned"].includes(o.status) &&
+        o.history?.some((event) => event.status === "partial_pending"))
+    )
       o.partialDelivered = true;
     if (/^(?:FREE-)?ORD-DEMO-/.test(o.id) && o.service === "vip")
       o.fee = Math.max(o.fee, o.baseFee + data.config.vipSurcharge);
@@ -200,11 +209,16 @@ export function createDemoApi(
     o.history.push({
       at: now(),
       actor: currentId || "SYSTEM",
-      text: text || statuses[status],
+      text: text || workflowEventLabels[status] || statusLabel(o),
+      publicStatus: orderStatus(o),
       status,
     });
     for (const owner of new Set([o.merchant, o.courier].filter(Boolean)))
-      notify(owner, o.id + " — " + (text || statuses[status]), o.id);
+      notify(
+        owner,
+        o.id + " — " + (text || workflowEventLabels[status] || statusLabel(o)),
+        o.id,
+      );
   };
   const audit = (text) =>
     data.audit.unshift({ id: id("AUD"), at: now(), actor: currentId, text });
@@ -370,6 +384,7 @@ export function createDemoApi(
   }
   function visible(o, u) {
     const v = copy(o);
+    v.publicStatus = orderStatus(o);
     const c = data.users.find((x) => x.id === o.courier);
     v.courierInfo = c
       ? {
@@ -607,10 +622,16 @@ export function createDemoApi(
           ? ["draft"]
           : a === "unpublish"
             ? ["published"]
-            : ["draft", "published", "reserved", "approaching"],
+            : BEFORE,
       );
       if (a === "publish") o.exclusionPending = false;
-      if (a === "cancel") o.settled = true;
+      if (a === "cancel") {
+        o.settled = true;
+        o.deadline = null;
+        o.extensionRequest = null;
+        for (const batch of data.batches.filter((b) => b.ids.includes(o.id)))
+          batch.used = true;
+      }
       change(
         o,
         a === "publish"
