@@ -8,7 +8,13 @@ defineProps({ model: { type: Object, required: true } });
   <div class="entry-intro">
     <span class="entry-kicker">كل مشوار يبدأ بخطوة</span>
     <h1>حيّاك بواصل</h1>
-    <p>اختار حسابك، وخلّي الباقي علينا.</p>
+    <p>
+      {{
+        model.state.authIntent === "register"
+          ? "اختار نوع الحساب حتى نكمل تسجيلك."
+          : "اختار حسابك، وخلّي الباقي علينا."
+      }}
+    </p>
   </div>
   <div class="glass-role-grid">
     <template v-for="r in model.application.accounts" :key="r"
@@ -30,7 +36,7 @@ defineProps({ model: { type: Object, required: true } });
           <template v-else>توصيلك بكل سهولة</template></span
         >
         <span class="role-enter"
-          >{{ "دخول " }}
+          >{{ model.state.authIntent === "register" ? "تسجيل " : "دخول " }}
           {{ model.roleNames[r] }}
           {{ " " }}
           <MaterialIcon

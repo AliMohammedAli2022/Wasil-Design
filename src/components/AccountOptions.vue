@@ -1,5 +1,6 @@
 <script setup>
 import CloseIcon from "./CloseIcon.vue";
+import TermsContent from "./TermsContent.vue";
 import { ref } from "vue";
 import { darkMode, toggleTheme } from "../services/theme.js";
 defineProps({ signedIn: Boolean, guest: Boolean });
@@ -145,6 +146,7 @@ const icons = {
       </button>
     </div>
     <div v-else-if="page === 'privacy'" class="policy-copy">
+      <TermsContent />
       <h3>خصوصية النسخة الحالية</h3>
       <p>
         واصل حاليًا واجهة تجريبية. تُحفظ بيانات الحساب والطلبات التجريبية
@@ -162,12 +164,6 @@ const icons = {
         يمكن حذف البيانات المحلية من إعدادات موقع واصل في المتصفح. تسجيل الخروج
         ينهي الدخول الحالي ولا يمسح البيانات المحفوظة. تجنّب إدخال معلومات أو
         مستمسكات حقيقية في هذه النسخة.
-      </p>
-      <h3>شروط الاستخدام</h3>
-      <p>
-        الطلبات والأرصدة والإجراءات الحالية مخصّصة لتجربة الواجهة ولا تنفذ
-        توصيلًا أو دفعًا ماليًا فعليًا. استخدم التطبيق بصورة مشروعة ولا تُدخل
-        بيانات أشخاص آخرين دون إذنهم.
       </p>
       <p>
         سيُحدّث هذا النص عند ربط الخدمات الفعلية بالخادم، قبل جمع أو معالجة

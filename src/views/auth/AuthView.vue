@@ -13,6 +13,14 @@ defineProps({ model: { type: Object, required: true } });
       <AuthBrand :model="model" />
       <LoginForm v-if="model.state.authRole" :model="model" />
       <RoleChoices v-else :model="model" />
+      <button
+        v-if="!model.state.authRole && model.state.authIntent === 'register'"
+        type="button"
+        class="auth-text-button"
+        data-action="login-page"
+      >
+        لديك حساب؟ تسجيل الدخول
+      </button>
       <p class="entry-signature">توصيل أسرع… لحياة أسهل</p>
     </div>
   </div>

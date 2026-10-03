@@ -5,6 +5,7 @@ export function parseRoute(
   allowedAccounts = ["merchant", "free", "courier"],
 ) {
   const [role, page] = (hash || "").replace(/^#\/?/, "").split("/");
+  if (role === "register" && !page) return { role: null, page: "register" };
   if (!allowedAccounts.includes(role)) return { role: null, page: "choose" };
   const pages = [
     "login",
@@ -18,5 +19,9 @@ export function parseRoute(
   return { role, page: pages.includes(page) ? page : "home" };
 }
 export function routeHash(role, page) {
-  return role ? `#/${role}/${page}` : "#/choose";
+  return role
+    ? `#/${role}/${page}`
+    : page === "register"
+      ? "#/register"
+      : "#/choose";
 }

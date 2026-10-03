@@ -23,6 +23,7 @@ import {
 } from "../services/orderPolicy.js";
 import { api as frontendApi } from "../services/api.js";
 import { parseRoute, routeHash } from "../services/routes.js";
+import { termsConsent } from "../services/termsConsent.js";
 import { createCameraViews } from "../views/camera/views.js";
 import { createAccountViews } from "../views/account/views.js";
 import { createOrdersViews } from "../views/orders/views.js";
@@ -144,6 +145,7 @@ export function useWasel(application = currentApplication()) {
     offline: false,
     trackingId: null,
     authRole: application.defaultAccount,
+    authIntent: "login",
   });
   const ui = shallowReactive({
     page: "AuthView",
@@ -166,7 +168,7 @@ export function useWasel(application = currentApplication()) {
     loginPhone: "",
   });
   function loginPage(error = "") {
-    writeRoute(state.authRole, "login");
+    writeRoute(state.authRole, state.authIntent);
     ui.passwordVisible = false;
     ui.loginPassword = "";
     ui.loginPhone = "";
@@ -187,6 +189,27 @@ export function useWasel(application = currentApplication()) {
         : "MerchantRegistration";
     ui.formRevision++;
     ui.revision++;
+  }
+  function beginRegistration(role) {
+    state.authRole = role;
+    state.authIntent = "register";
+    state.registration = {
+      step: 0,
+      role,
+      activity: "shop",
+      vehicle: "sedan",
+      province: "بغداد",
+      photos: [],
+      documents: {},
+      location: { lat: 33.3, lng: 44.43 },
+    };
+    registrationView();
+  }
+  function registerAccount(registration) {
+    return api("/api/register", {
+      ...registration,
+      termsAcceptance: termsConsent.read(application.id),
+    });
   }
   function courierRegistrationView() {
     writeRoute("courier", "register");
@@ -597,15 +620,18 @@ export function useWasel(application = currentApplication()) {
         await api("/api/logout", {});
         state.S = null;
         state.authRole = application.defaultAccount;
+        state.authIntent = "login";
         closeModal();
         loginPage();
       } else if (a === "login-page") {
         state.registration = null;
+        state.authIntent = "login";
         loginPage();
       } else if (a === "choose-role") {
         if (!application.accounts.includes(b.dataset.role)) return;
         state.authRole = b.dataset.role;
-        loginPage();
+        if (state.authIntent === "register") beginRegistration(state.authRole);
+        else loginPage();
       } else if (a === "choose-again") {
         state.authRole = application.defaultAccount;
         loginPage();
@@ -900,19 +926,9 @@ export function useWasel(application = currentApplication()) {
           },
         );
       } else if (a === "register") {
-        state.registration = {
-          step: 0,
-          role: state.authRole || "merchant",
-          activity: "shop",
-          vehicle: "sedan",
-          province: "بغداد",
-          photos: [],
-          location: {
-            lat: 33.3,
-            lng: 44.43,
-          },
-        };
-        registrationView();
+        beginRegistration(
+          state.authRole || application.defaultAccount || "merchant",
+        );
       } else if (a === "register-back") {
         state.registration.step--;
         registrationView();
@@ -995,7 +1011,7 @@ export function useWasel(application = currentApplication()) {
               r.photos.push(await imageData(form.elements[k].files[0]));
         }
         if (r.step === 3) {
-          await api("/api/register", r);
+          await registerAccount(r);
           await login(r.role, r.phone, r.password);
           toast("تم إنشاء الحساب");
           state.registration = null;
@@ -1476,7 +1492,7 @@ export function useWasel(application = currentApplication()) {
         courierRegistrationView();
       } else if (a === "courier-confirm") {
         b.disabled = true;
-        await api("/api/register", state.registration);
+        await registerAccount(state.registration);
         const r = state.registration;
         closeModal();
         await login("courier", r.phone, r.password);
@@ -1614,10 +1630,22 @@ export function useWasel(application = currentApplication()) {
       cameraDialog()?.close();
       const route = parseRoute(location.hash, application.accounts);
       state.authRole = route.role || application.defaultAccount;
-      if (!route.role && location.hash !== routeHash(state.authRole, "login")) {
-        history.replaceState(null, "", routeHash(state.authRole, "login"));
+      state.authIntent = route.page === "register" ? "register" : "login";
+      if (
+        !route.role &&
+        location.hash !== routeHash(state.authRole, state.authIntent)
+      ) {
+        history.replaceState(
+          null,
+          "",
+          routeHash(state.authRole, state.authIntent),
+        );
       }
-      if (!route.role || route.page === "login") {
+      if (
+        !state.authRole ||
+        route.page === "login" ||
+        route.page === "choose"
+      ) {
         state.S = null;
         state.registration = null;
         state.wizard = null;
@@ -1626,20 +1654,7 @@ export function useWasel(application = currentApplication()) {
       }
       if (route.page === "register") {
         state.S = null;
-        state.registration = {
-          step: 0,
-          role: route.role,
-          activity: "shop",
-          vehicle: "sedan",
-          province: "بغداد",
-          photos: [],
-          documents: {},
-          location: {
-            lat: 33.3,
-            lng: 44.43,
-          },
-        };
-        registrationView();
+        beginRegistration(state.authRole);
         return;
       }
       state.registration = null;
