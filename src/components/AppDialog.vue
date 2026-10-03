@@ -1,6 +1,6 @@
 <script setup>
-import CloseIcon from "./CloseIcon.js";
-import RenderContent from "./RenderContent.js";
+import CloseIcon from "./CloseIcon.vue";
+import ViewContent from "./ViewContent.vue";
 defineProps({ title: String, content: [Object, Array, String], error: String });
 defineEmits(["close"]);
 </script>
@@ -23,7 +23,7 @@ defineEmits(["close"]);
       </button>
     </div>
     <div id="dialog-content">
-      <RenderContent :content="content" />
+      <ViewContent :content="content" />
       <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
     </div>
   </dialog>

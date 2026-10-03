@@ -1,5 +1,5 @@
 <script setup>
-import CloseIcon from "./CloseIcon.js";
+import CloseIcon from "./CloseIcon.vue";
 import { ref } from "vue";
 import { darkMode, toggleTheme } from "../services/theme.js";
 defineProps({ signedIn: Boolean, guest: Boolean });

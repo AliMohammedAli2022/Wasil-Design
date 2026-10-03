@@ -1,48 +1,46 @@
+import ViewHost from "../components/ViewHost.vue";
+import { provide } from "vue";
+import { viewStateKey } from "./useViewState.js";
+import { createView } from "../services/viewContent.js";
+import MaterialIcon from "../views/shell/MaterialIcon.vue";
+import AppNavigation from "../views/shell/AppNavigation.vue";
+import WalletNumberDialog from "../views/shell/WalletNumberDialog.vue";
+import PasswordChangeDialog from "../views/shell/PasswordChangeDialog.vue";
+import NotificationsDialog from "../views/shell/NotificationsDialog.vue";
+import FreeRegistrationDialog from "../views/shell/FreeRegistrationDialog.vue";
+import InstallInstructions from "../views/shell/InstallInstructions.vue";
+import DeviceDraftView from "../views/shell/DeviceDraftView.vue";
+import SplashArtView from "../views/shell/SplashArt.vue";
 import {
   recommendVehicle,
   vehicleFits,
-  areas,
   nearestArea,
 } from "../services/orderPolicy.js";
 import { api as frontendApi } from "../services/api.js";
-import DeviceDraftDetail from "../components/DeviceDraftDetail.vue";
 import { parseRoute, routeHash } from "../services/routes.js";
-import { createCameraRenderers } from "../renderers/camera.js";
-import { createAccountRenderers } from "../renderers/account.js";
-import { createOrdersRenderers } from "../renderers/orders.js";
-import { createAuthRenderers } from "../renderers/auth.js";
-import { createUiRenderers } from "../renderers/ui.js";
+import { createCameraViews } from "../views/camera/views.js";
+import { createAccountViews } from "../views/account/views.js";
+import { createOrdersViews } from "../views/orders/views.js";
+import { createAuthViews } from "../views/auth/views.js";
+import { createUiViews } from "../views/ui/views.js";
 import {
-  h as vueH,
-  mergeProps,
   shallowReactive,
   computed,
-  defineComponent,
   nextTick,
   onMounted,
   onBeforeUnmount,
-  withDirectives,
 } from "vue";
 import {
-  attributes,
-  fallback,
   clone,
   phoneDigits,
   phoneError,
   PHONE_FIELDS,
   PHONE_ATTRIBUTES,
-} from "../renderers/helpers.js";
-import { walletMotion } from "../renderers/walletMotion.js";
+} from "../services/formFields.js";
 export function useWasel() {
   function viewContext() {
     return {
-      h,
-      mergeProps,
-      attributes,
       input,
-      button,
-      icon,
-      splashBike,
       money,
       date,
       roleNames,
@@ -52,13 +50,9 @@ export function useWasel() {
       select,
       vehicleNames,
       provinces,
-      coords,
-      row,
-      stepper,
       courierDocs,
       before,
       closed,
-      metric,
       statusPicker,
       orderList,
       baseOrders,
@@ -68,7 +62,6 @@ export function useWasel() {
       maps,
       availableActions,
       startOrder,
-      fallback,
       mapPlot,
       offlineDraftsView,
       ledger,
@@ -78,23 +71,6 @@ export function useWasel() {
       ui,
       nextTick,
       gatherCourier,
-      navIcon,
-      splashScenery,
-      routeLines,
-      authView,
-      merchantRegistrationView,
-      homeView,
-      ordersView,
-      orderDetail,
-      orderWizard,
-      orderActionForm,
-      localMap,
-      accountView,
-      walletView,
-      readiness,
-      profileForm,
-      drawDocumentCamera,
-      reviewCourierRegistration,
     };
   }
   const {
@@ -111,9 +87,9 @@ export function useWasel() {
     splashBike,
     splashScenery,
     routeLines,
-  } = createUiRenderers(viewContext);
+  } = createUiViews(viewContext);
   const { authView, merchantRegistrationView, courierView } =
-    createAuthRenderers(viewContext);
+    createAuthViews(viewContext);
   const {
     homeView,
     statusPicker,
@@ -126,7 +102,7 @@ export function useWasel() {
     orderActionForm,
     mapPlot,
     localMap,
-  } = createOrdersRenderers(viewContext);
+  } = createOrdersViews(viewContext);
   const {
     accountView,
     walletView,
@@ -134,9 +110,9 @@ export function useWasel() {
     readDrafts,
     readiness,
     profileForm,
-  } = createAccountRenderers(viewContext);
+  } = createAccountViews(viewContext);
   const { drawDocumentCamera, reviewCourierRegistration } =
-    createCameraRenderers(viewContext);
+    createCameraViews(viewContext);
   const cleanups = [];
   const handlers = {
     click: [],
@@ -184,72 +160,6 @@ export function useWasel() {
     loginPassword: "",
     loginPhone: "",
   });
-  function h(tag, props, children) {
-    if (typeof props === "object" && !Array.isArray(props) && props) {
-      if (String(props.class || "").includes("inline-error"))
-        children = [ui.formError];
-      if (props.class === "camera-error") children = [ui.cameraError];
-      if (
-        props.class === "camera-actions" &&
-        documentCapture &&
-        !documentCapture.photo &&
-        ui.cameraReady
-      )
-        children = [
-          button(
-            "document-shoot",
-            ["التقاط الصورة ", icon("photo_camera")],
-            "",
-            "camera-primary",
-          ),
-        ];
-      if (props["data-action"] === "install" && ui.installed)
-        props = {
-          ...props,
-          hidden: true,
-        };
-      if (
-        tag === "input" &&
-        props.name === "password" &&
-        ui.page === "AuthView"
-      )
-        props = {
-          ...props,
-          type: ui.passwordVisible ? "text" : "password",
-          value: ui.loginPassword,
-          onInput: (event) => {
-            ui.loginPassword = event.target.value;
-          },
-        };
-      if (
-        tag === "input" &&
-        props.name === "identifier" &&
-        ui.page === "AuthView"
-      )
-        props = {
-          ...props,
-          value: ui.loginPhone,
-          onInput: (event) => {
-            ui.loginPhone = event.target.value;
-          },
-        };
-      if (props["data-action"] === "toggle-password")
-        children = [icon(ui.passwordVisible ? "visibility_off" : "visibility")];
-    }
-    if (props?.["data-action"] === "toggle-password")
-      props = {
-        ...props,
-        "aria-label": ui.passwordVisible
-          ? "إخفاء كلمة المرور"
-          : "إظهار كلمة المرور",
-        "aria-pressed": String(ui.passwordVisible),
-      };
-    const node =
-      arguments.length === 2 ? vueH(tag, props) : vueH(tag, props, children);
-    return tag === "section" && props?.class === "orbit-wallet"
-      ? withDirectives(node, [[walletMotion, state.S?.balance]])
-      : node;
-  }
   function loginPage(error = "") {
     writeRoute(state.authRole, "login");
     ui.passwordVisible = false;
@@ -280,7 +190,6 @@ export function useWasel() {
     ui.revision++;
   }
   ("use strict");
-
   const $ = (s) => document.querySelector(s),
     $$ = (s) => [...document.querySelectorAll(s)];
   const esc = (x) =>
@@ -308,14 +217,11 @@ export function useWasel() {
           })
         : "";
   const icon = (n) =>
-    h(
-      "span",
-      {
-        class: "material-symbols-outlined",
-        "aria-hidden": "true",
+    createView(MaterialIcon, {
+      model: {
+        n,
       },
-      [n],
-    );
+    });
   const roleNames = {
     merchant: "التاجر",
     courier: "المندوب",
@@ -490,25 +396,12 @@ export function useWasel() {
             ["wallet", "المحفظة"],
             ["account", "حسابي"],
           ];
-    return h(
-      "div",
-      list.map(([key, label]) =>
-        h(
-          "button",
-          {
-            type: "button",
-            "data-action": "nav",
-            "data-screen": key,
-            class: {
-              new: key === "new",
-              active: key === state.screen,
-            },
-            "aria-current": key === state.screen ? "page" : undefined,
-          },
-          [navIcon(key), h("span", label)],
-        ),
-      ),
-    );
+    return createView(AppNavigation, {
+      model: {
+        list,
+        state,
+      },
+    });
   }
   function render() {
     ui.formError = "";
@@ -584,12 +477,11 @@ export function useWasel() {
         "returnFee",
       ])
         d[key] = Number(f[key]);
-      for (const key of ["nature", "service", "feePayer"])
-        d[key] = f[key];
+      for (const key of ["nature", "service", "feePayer"]) d[key] = f[key];
       d.vehicles = new FormData(form).getAll("vehicles");
       if (!d.vehicles.length) throw Error("اختر وسيلة نقل واحدة على الأقل");
       if (d.vehicles.length > 2) throw Error("اختر وسيلتي نقل كحد أقصى");
-      if (!d.vehicles.every(v => vehicleFits(v, d, state.S.settings)))
+      if (!d.vehicles.every((v) => vehicleFits(v, d, state.S.settings)))
         throw Error("اختر وسائل نقل تناسب طبيعة الشحنة ووزنها وأبعادها");
       d.vehicle = d.vehicles[0];
       d.collection = f.collection || d.collection;
@@ -618,10 +510,16 @@ export function useWasel() {
       };
     } else if (state.wizard.step === 1) {
       d.sender = {
-        name: state.S.user.name, phone: state.S.user.phone,
-        province: state.S.user.province, phone2: state.S.user.phone2,
-        area: f.senderArea, address: f.senderAddress,
-        location: { lat: Number(f.lat), lng: Number(f.lng) },
+        name: state.S.user.name,
+        phone: state.S.user.phone,
+        province: state.S.user.province,
+        phone2: state.S.user.phone2,
+        area: f.senderArea,
+        address: f.senderAddress,
+        location: {
+          lat: Number(f.lat),
+          lng: Number(f.lng),
+        },
       };
     } else if (state.wizard.step === 2) {
       d.recipient = {
@@ -728,23 +626,14 @@ export function useWasel() {
           await navigator.clipboard.writeText(state.S.user.walletId);
           toast("تم نسخ رقم المحفظة");
         } catch {
-          modal("رقم المحفظة", [
-            h(
-              "p",
-              {
-                class: "wallet-copy-value",
-                dir: "ltr",
+          modal(
+            "رقم المحفظة",
+            createView(WalletNumberDialog, {
+              model: {
+                state,
               },
-              [state.S.user.walletId],
-            ),
-            h(
-              "p",
-              {
-                class: "muted",
-              },
-              ["اضغط مطولاً على الرقم لنسخه."],
-            ),
-          ]);
+            }),
+          );
         }
       } else if (a === "wallet-statement")
         modal("كشف المحفظة", [
@@ -801,8 +690,13 @@ export function useWasel() {
         );
         await nextTick();
         const trigger = $("#status-trigger");
-        trigger?.scrollIntoView({ block: "start", behavior: "smooth" });
-        trigger?.focus({ preventScroll: true });
+        trigger?.scrollIntoView({
+          block: "start",
+          behavior: "smooth",
+        });
+        trigger?.focus({
+          preventScroll: true,
+        });
       } else if (a === "filter") {
         const menu = $("#status-menu");
         if (menu?.matches(":popover-open")) menu.hidePopover();
@@ -810,7 +704,9 @@ export function useWasel() {
         state.homePage = 1;
         state.registryPage = 1;
         render();
-        $("#status-trigger")?.focus({ preventScroll: true });
+        $("#status-trigger")?.focus({
+          preventScroll: true,
+        });
       } else if (a === "wizard-back") {
         state.wizard.step--;
         ui.formRevision++;
@@ -823,9 +719,14 @@ export function useWasel() {
         };
         if (state.offline || navigator.onLine === false) {
           if (state.wizard.id)
-            throw Error("تعديل طلب موجود يحتاج اتصالاً؛ بياناتك باقية في النموذج");
+            throw Error(
+              "تعديل طلب موجود يحتاج اتصالاً؛ بياناتك باقية في النموذج",
+            );
           const drafts = readDrafts();
-          drafts.push({ ...data, publish: false });
+          drafts.push({
+            ...data,
+            publish: false,
+          });
           localStorage.setItem(
             "wasel-offline-" + state.S.user.id,
             JSON.stringify(drafts),
@@ -861,19 +762,28 @@ export function useWasel() {
           throw Error("اتصل بالإنترنت لحفظ أو نشر المسودة");
         state.draftBusy = true;
         try {
-        if (a === "sync-draft") await api("/api/orders", {
-          ...drafts[index],
-          publish: b.dataset.publish === "true",
-        });
-        drafts.splice(index, 1);
-        localStorage.setItem(
-          "wasel-offline-" + state.S.user.id,
-          JSON.stringify(drafts),
-        );
-        await refresh();
-        modal("المسودات", [offlineDraftsView()]);
-        toast(a === "delete-local-draft" ? "تم حذف المسودة" : b.dataset.publish === "true" ? "تم نشر الطلب" : "تم حفظ الطلب");
-        } finally { state.draftBusy = false; }
+          if (a === "sync-draft")
+            await api("/api/orders", {
+              ...drafts[index],
+              publish: b.dataset.publish === "true",
+            });
+          drafts.splice(index, 1);
+          localStorage.setItem(
+            "wasel-offline-" + state.S.user.id,
+            JSON.stringify(drafts),
+          );
+          await refresh();
+          modal("المسودات", [offlineDraftsView()]);
+          toast(
+            a === "delete-local-draft"
+              ? "تم حذف المسودة"
+              : b.dataset.publish === "true"
+                ? "تم نشر الطلب"
+                : "تم حفظ الطلب",
+          );
+        } finally {
+          state.draftBusy = false;
+        }
       } else if (a === "refresh-chat") {
         await refresh(false);
         orderActionForm(
@@ -930,28 +840,12 @@ export function useWasel() {
         }
       } else if (a === "edit-profile") profileForm();
       else if (a === "change-password") {
-        modal("تغيير كلمة مرور الحساب", [
-          h("p", { class: "muted" }, [
-            "هذه معاينة في النسخة التجريبية. تغيير كلمة المرور الفعلي يتفعّل عند ربط الحسابات بالخادم.",
-          ]),
-          h("form", { id: "password-change-form", class: "form-stack" }, [
-            input(
-              "newPassword",
-              "كلمة المرور الجديدة",
-              "",
-              'type="password" required minlength="8" autocomplete="new-password"',
-            ),
-            input(
-              "confirmPassword",
-              "تأكيد كلمة المرور",
-              "",
-              'type="password" required minlength="8" autocomplete="new-password"',
-            ),
-            h("button", { type: "submit", class: "primary-button" }, [
-              "التحقق من كلمة المرور",
-            ]),
-          ]),
-        ]);
+        modal(
+          "تغيير كلمة مرور الحساب",
+          createView(PasswordChangeDialog, {
+            model: {},
+          }),
+        );
       } else if (a === "preferences") {
         await api("/api/profile", {
           action: "preferences",
@@ -961,41 +855,15 @@ export function useWasel() {
       } else if (a === "nearby") localMap(true);
       else if (a === "merchant-map") localMap();
       else if (a === "notifications")
-        modal("الإشعارات", [
-          h(
-            "ul",
-            {
-              class: "notice-list",
+        modal(
+          "الإشعارات",
+          createView(NotificationsDialog, {
+            model: {
+              state,
+              date,
             },
-            [
-              fallback(
-                state.S.notifications.map((n) =>
-                  h("li", {}, [
-                    n.text,
-                    h(
-                      "small",
-                      {
-                        class: "muted",
-                        style: "display:block",
-                      },
-                      [date(n.at), " ", n.orderId || ""],
-                    ),
-                  ]),
-                ),
-                h("li", {}, ["لا توجد إشعارات بعد."]),
-              ),
-            ],
-          ),
-          h(
-            "p",
-            {
-              class: "file-help",
-            },
-            [
-              "تظهر التحديثات أثناء فتح التطبيق. إشعارات الدفع خارج التطبيق تحتاج إعداد خدمة Push.",
-            ],
-          ),
-        ]);
+          }),
+        );
       else if (a === "gps") {
         if (!navigator.geolocation) throw Error("الموقع غير مدعوم في المتصفح");
         const form = b.closest("form");
@@ -1033,23 +901,12 @@ export function useWasel() {
       } else if (a === "register-free") {
         modal(
           "حساب التوصيل الحر",
-          h("form", { id: "free-register-form", class: "form-stack" }, [
-            input("name", "الاسم", "", "required"),
-            input("phone", "الهاتف", "", `required ${PHONE_ATTRIBUTES}`),
-            select(
-              "province",
-              "المحافظة",
-              Object.fromEntries(provinces.map((p) => [p, p])),
-              "بغداد",
-            ),
-            input("area", "المنطقة", "", "required"),
-            input("address", "العنوان", "", "required"),
-            coords({ lat: 33.3, lng: 44.43 }),
-            h("p", { class: "inline-error" }, []),
-            h("button", { class: "primary-button", type: "submit" }, [
-              "إنشاء الحساب",
-            ]),
-          ]),
+          createView(FreeRegistrationDialog, {
+            model: {
+              PHONE_ATTRIBUTES,
+              provinces,
+            },
+          }),
         );
       } else if (a === "register") {
         state.registration = {
@@ -1096,7 +953,10 @@ export function useWasel() {
           ...f,
           role: "merchant",
           activity: "individual",
-          location: { lat: Number(f.lat), lng: Number(f.lng) },
+          location: {
+            lat: Number(f.lat),
+            lng: Number(f.lng),
+          },
         });
         closeModal();
         await login("merchant", f.phone);
@@ -1168,11 +1028,26 @@ export function useWasel() {
         if (["retry", "defer"].includes(form.dataset.op))
           f.when = new Date(f.when).toISOString();
         if (form.dataset.op === "arrive") {
-          if (!navigator.geolocation) throw Error("المتصفح لا يدعم تحديد الموقع");
-          const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve,
-            () => reject(Error("تعذر تحديد موقعك؛ اسمح بالوصول للموقع وأعد المحاولة")),
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }));
-          f.location = { lat: position.coords.latitude, lng: position.coords.longitude };
+          if (!navigator.geolocation)
+            throw Error("المتصفح لا يدعم تحديد الموقع");
+          const position = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              () =>
+                reject(
+                  Error("تعذر تحديد موقعك؛ اسمح بالوصول للموقع وأعد المحاولة"),
+                ),
+              {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 15000,
+              },
+            ),
+          );
+          f.location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
           f.accuracy = position.coords.accuracy;
         }
         await runAction(form.dataset.id, form.dataset.op, {
@@ -1195,7 +1070,10 @@ export function useWasel() {
         if (!f.lat || !f.lng) throw Error("حدد الموقع على الخريطة أولاً.");
         await api("/api/profile", {
           action: "location",
-          location: { lat: Number(f.lat), lng: Number(f.lng) },
+          location: {
+            lat: Number(f.lat),
+            lng: Number(f.lng),
+          },
         });
         closeModal();
         await refresh();
@@ -1240,21 +1118,34 @@ export function useWasel() {
         choice.disabled = !vehicleFits(choice.value, d, state.S.settings);
         if (choice.disabled) choice.checked = false;
       }
-      if (!choices.some(c => c.checked)) {
-        const suggested = choices.find(c => c.value === recommendVehicle(d, state.S.settings) && !c.disabled);
+      if (!choices.some((c) => c.checked)) {
+        const suggested = choices.find(
+          (c) =>
+            c.value === recommendVehicle(d, state.S.settings) && !c.disabled,
+        );
         if (suggested) suggested.checked = true;
       }
       const summary = f.querySelector("#vehicle-selection");
-      if (summary) summary.textContent = choices.filter(c => c.checked).map(c => vehicleNames[c.value]).join(" أو ") || "اختر المركبة";
+      if (summary)
+        summary.textContent =
+          choices
+            .filter((c) => c.checked)
+            .map((c) => vehicleNames[c.value])
+            .join(" أو ") || "اختر المركبة";
     }
     if (f?.id === "order-form" && e.target.name === "vehicles") {
       const choices = [...f.querySelectorAll('input[name="vehicles"]')];
-      if (choices.filter(c => c.checked).length > 2) {
+      if (choices.filter((c) => c.checked).length > 2) {
         e.target.checked = false;
         toast("تگدر تختار وسيلتين كحد أقصى");
       }
       const summary = f.querySelector("#vehicle-selection");
-      if (summary) summary.textContent = choices.filter(c => c.checked).map(c => vehicleNames[c.value]).join(" أو ") || "اختر المركبة";
+      if (summary)
+        summary.textContent =
+          choices
+            .filter((c) => c.checked)
+            .map((c) => vehicleNames[c.value])
+            .join(" أو ") || "اختر المركبة";
     }
     if (
       f?.id === "order-form" &&
@@ -1264,9 +1155,7 @@ export function useWasel() {
       const matches = (state.S.user.customers || []).filter(
         (c) => c.phone === e.target.value,
       );
-      for (const [id, key] of [
-        ["recipient-names", "name"],
-      ]) {
+      for (const [id, key] of [["recipient-names", "name"]]) {
         const list = document.getElementById(id);
         if (list)
           list.replaceChildren(
@@ -1278,18 +1167,34 @@ export function useWasel() {
           );
       }
     }
-
     if (f?.id === "order-form" && e.target.name === "pickupAddress") {
-      const address = state.S.user.addresses?.find((a) => a.id === e.target.value);
-      state.wizard.data.sender = e.target.value === "new"
-        ? { name: state.S.user.name, phone: state.S.user.phone, province: state.S.user.province }
-        : { ...state.S.user, ...address, addressId: address?.id || "" };
+      const address = state.S.user.addresses?.find(
+        (a) => a.id === e.target.value,
+      );
+      state.wizard.data.sender =
+        e.target.value === "new"
+          ? {
+              name: state.S.user.name,
+              phone: state.S.user.phone,
+              province: state.S.user.province,
+            }
+          : {
+              ...state.S.user,
+              ...address,
+              addressId: address?.id || "",
+            };
       state.wizard.data.pickupChoice = e.target.value;
       ui.formRevision++;
       render();
     }
-    if (f?.id === "order-form" && state.wizard?.step === 2 && e.target.name === "name") {
-      const matches = (state.S.user.customers || []).filter(c => c.phone === f.elements.phone.value && c.name === e.target.value);
+    if (
+      f?.id === "order-form" &&
+      state.wizard?.step === 2 &&
+      e.target.name === "name"
+    ) {
+      const matches = (state.S.user.customers || []).filter(
+        (c) => c.phone === f.elements.phone.value && c.name === e.target.value,
+      );
       if (matches.length !== 1) return;
       state.wizard.data.notes = f.elements.notes?.value || "";
       state.wizard.data.recipient = clone(matches[0]);
@@ -1314,15 +1219,29 @@ export function useWasel() {
         }
       }
     }
-    if (field.name === "phone" && field.form?.id === "order-form" && state.wizard?.step === 2) {
+    if (
+      field.name === "phone" &&
+      field.form?.id === "order-form" &&
+      state.wizard?.step === 2
+    ) {
       for (const handler of handlers.change || []) handler(e);
     }
-    if (field.name === "returnAmount" && field.form?.dataset.op === "partial_propose") {
+    if (
+      field.name === "returnAmount" &&
+      field.form?.dataset.op === "partial_propose"
+    ) {
       const preview = document.getElementById("partial-return-preview");
-      const total = Number(preview?.dataset.total), returned = Number(field.value);
-      if (preview) preview.textContent = returned > 0 && returned < total
-        ? "قيمة الجزء المسلَّم: " + money(total - returned) + " د.ع — قيمة المرتجع: " + money(returned) + " د.ع. الأجور منفصلة."
-        : "أدخل قيمة مرتجع أقل من قيمة البضاعة الكلية.";
+      const total = Number(preview?.dataset.total),
+        returned = Number(field.value);
+      if (preview)
+        preview.textContent =
+          returned > 0 && returned < total
+            ? "قيمة الجزء المسلَّم: " +
+              money(total - returned) +
+              " د.ع — قيمة المرتجع: " +
+              money(returned) +
+              " د.ع. الأجور منفصلة."
+            : "أدخل قيمة مرتجع أقل من قيمة البضاعة الكلية.";
     }
     if (field.id === "order-search") {
       const pos = e.target.selectionStart;
@@ -1394,18 +1313,11 @@ export function useWasel() {
         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       modal(
         "تثبيت واصل",
-        ios
-          ? h("p", {}, [
-              "افتح الرابط في Safari، ثم اضغط «مشاركة» واختر «إضافة إلى الشاشة الرئيسية»، ثم «إضافة».",
-            ])
-          : [
-              h("p", {}, [
-                "من قائمة المتصفح ⋮ اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».",
-              ]),
-              h("p", {}, [
-                "إذا فتحت الرابط داخل تطبيق آخر، افتحه في Chrome أو Edge أولاً. قد تحتاج زيارة الصفحة مجددًا حتى يتيح المتصفح التثبيت.",
-              ]),
-            ],
+        createView(InstallInstructions, {
+          model: {
+            ios,
+          },
+        }),
       );
     }
   }
@@ -1631,68 +1543,56 @@ export function useWasel() {
         );
     }
   });
-  const renderers = {
-    AuthView: () => authView(ui.authError),
+  provide(viewStateKey, {
+    ui,
+    state,
+    get documentCapture() {
+      return documentCapture;
+    },
+  });
+  const viewFactories = {
+    AuthView: () => authView(),
     HomeView: homeView,
     OrdersView: ordersView,
     OrderWizard: orderWizard,
     AccountView: accountView,
-    DeviceDraftView: () => h(DeviceDraftDetail, {
-      user: state.S.user, draftId: state.localDraftId, offline: state.offline,
-      onBack: () => { state.screen = "account"; render(); modal("المسودات", [offlineDraftsView()]); },
-      onDone: async message => { state.screen = "account"; await refresh(); modal("المسودات", [offlineDraftsView()]); toast(message); },
-    }),
+    DeviceDraftView: () =>
+      createView(DeviceDraftView, {
+        model: {
+          state,
+          render,
+          modal,
+          offlineDraftsView,
+          refresh,
+          toast,
+        },
+      }),
     WalletView: walletView,
     MerchantRegistration: merchantRegistrationView,
     CourierRegistration: courierView,
   };
   const views = Object.fromEntries(
-    Object.entries(renderers).map(([name, view]) => [
+    Object.entries(viewFactories).map(([name, factory]) => [
       name,
-      defineComponent({
-        name,
-        setup: () => () => {
+      createView(ViewHost, {
+        factory: () => {
           ui.revision;
-          return view();
+          return factory();
         },
       }),
     ]),
   );
-  const Navigation = defineComponent({
-    name: "AppNavigation",
-    setup: () => () => (state.S ? nav() : null),
+  const Navigation = createView(ViewHost, {
+    factory: () => (state.S ? nav() : null),
   });
-  const SplashArt = defineComponent({
-    name: "SplashArt",
-    setup: () => () =>
-      h("div", [
-        splashScenery(),
-        h(
-          "div",
-          {
-            class: "splash-content",
-          },
-          [
-            h("span", {
-              class: "auth-logo-art",
-              role: "img",
-              "aria-label": "شعار واصل",
-            }),
-            h("strong", "واصل"),
-            h(
-              "span",
-              {
-                class: "splash-english",
-                dir: "ltr",
-                lang: "en",
-              },
-              "WASIL · FOR DELIVERY",
-            ),
-            h("p", "من بابك… لكل وجهة"),
-            routeLines(),
-          ],
-        ),
-      ]),
+  const SplashArt = createView(ViewHost, {
+    factory: () =>
+      createView(SplashArtView, {
+        model: {
+          splashScenery,
+          routeLines,
+        },
+      }),
   });
   const currentView = computed(() => views[ui.page]);
   const title = computed(
@@ -1715,11 +1615,14 @@ export function useWasel() {
     ui.cameraContent = null;
     ui.cameraReady = false;
   }
-
   let restoringRoute = false;
   function writeRoute(role, page) {
     if (restoringRoute) return;
-    const hash = routeHash(role, page) + (page === "draft" && state.localDraftId ? "/" + encodeURIComponent(state.localDraftId) : "");
+    const hash =
+      routeHash(role, page) +
+      (page === "draft" && state.localDraftId
+        ? "/" + encodeURIComponent(state.localDraftId)
+        : "");
     if (location.hash !== hash) history.pushState(null, "", hash);
   }
   async function restoreRoute() {
@@ -1746,18 +1649,26 @@ export function useWasel() {
           province: "بغداد",
           photos: [],
           documents: {},
-          location: { lat: 33.3, lng: 44.43 },
+          location: {
+            lat: 33.3,
+            lng: 44.43,
+          },
         };
         registrationView();
         return;
       }
       state.registration = null;
       if (!state.S || state.S.user.role !== route.role) {
-        await api("/api/login", { role: route.role });
+        await api("/api/login", {
+          role: route.role,
+        });
         await refresh(false);
       }
       state.screen = route.page;
-      if (route.page === "draft") state.localDraftId = decodeURIComponent(location.hash.split("/")[3] || "");
+      if (route.page === "draft")
+        state.localDraftId = decodeURIComponent(
+          location.hash.split("/")[3] || "",
+        );
       state.filter = "all";
       state.homePage = 1;
       state.registryPage = 1;
@@ -1776,7 +1687,6 @@ export function useWasel() {
     }
   }
   listen(window, "hashchange", restoreRoute);
-
   onMounted(() => {
     showWelcomeSplash().then(() => {
       restoreRoute();

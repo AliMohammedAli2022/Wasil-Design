@@ -32,7 +32,7 @@ global.document = {
 };
 global.matchMedia = window.matchMedia;
 
-const helpers = () => import("./src/renderers/helpers.js");
+const helpers = () => import("./src/services/formFields.js");
 
 async function renderPage(page, configure = () => {}) {
   const { createSSRApp, h } = await import("vue");

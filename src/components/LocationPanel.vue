@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
-import LocationMap from "./LocationMap.js";
+import LocationMap from "./LocationMap.vue";
 import LocationShare from "./LocationShare.vue";
 import { nearestArea } from "../services/orderPolicy.js";
 const props = defineProps({

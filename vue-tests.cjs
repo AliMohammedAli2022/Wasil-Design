@@ -59,7 +59,10 @@ test("account drafts open order details with English history dates", async () =>
   const { app } = await renderPage("AccountView");
   const order = app.state.S.orders[0];
   assert.ok(order.history.length);
-  const button = { dataset: { action: "order", id: order.id }, disabled: false };
+  const button = {
+    dataset: { action: "order", id: order.id },
+    disabled: false,
+  };
   await app.dispatch("click", { target: { closest: () => button } });
   assert.equal(app.ui.dialogTitle, order.id);
   const html = await renderToString(h("div", app.ui.dialogContent));
@@ -80,6 +83,98 @@ test("auth screens preserve identity and safely escape content", async () => {
   assert.match(login.html, /login-form/);
   assert.match(login.html, /&lt;img/);
   assert.doesNotMatch(login.html, /<img onerror/);
+});
+
+test("template login fields retain typed credentials while password visibility changes", async () => {
+  const { h, reactive, provide, nextTick } = await import("vue");
+  const { mountView } = await import("./tools/mount-vue-test.mjs");
+  const { viewStateKey } = await import("./src/composables/useViewState.js");
+  const { default: FormInput } = await import("./src/views/ui/FormInput.vue");
+  const { default: ActionButton } =
+    await import("./src/views/ui/ActionButton.vue");
+  const ui = reactive({
+    page: "AuthView",
+    passwordVisible: false,
+    loginPhone: "",
+    loginPassword: "",
+  });
+  const view = mountView(
+    h({
+      setup() {
+        provide(viewStateKey, { ui, state: {} });
+        return () =>
+          h("div", [
+            h(FormInput, { model: { name: "identifier", label: "الحساب" } }),
+            h(FormInput, {
+              model: {
+                name: "password",
+                label: "كلمة المرور",
+                attrs: 'type="password"',
+              },
+            }),
+            h(ActionButton, { model: { action: "toggle-password" } }),
+          ]);
+      },
+    }),
+  );
+  const [identifier, password] = view.findAll((node) => node.tag === "input");
+  identifier.props.onInput({ target: { value: "07700000001" } });
+  password.props.onInput({ target: { value: "private-value" } });
+  ui.passwordVisible = true;
+  await nextTick();
+  assert.equal(password.props.type, "text");
+  assert.equal(password.props.value, "private-value");
+  assert.equal(identifier.props.value, "07700000001");
+  assert.equal(
+    view.findAll((node) => node.tag === "button")[0].props["aria-pressed"],
+    "true",
+  );
+  ui.passwordVisible = false;
+  await nextTick();
+  assert.equal(password.props.type, "password");
+  assert.equal(password.props.value, "private-value");
+  view.unmount();
+});
+
+test("camera template switches from opening to capture and photo review without losing errors", async () => {
+  const { h, reactive, provide, nextTick } = await import("vue");
+  const { mountView } = await import("./tools/mount-vue-test.mjs");
+  const { viewStateKey } = await import("./src/composables/useViewState.js");
+  const { default: DocumentCamera } =
+    await import("./src/views/camera/DocumentCamera.vue");
+  const ui = reactive({ cameraReady: false, cameraError: "" });
+  const capture = reactive({ key: "identity", photo: "" });
+  const view = mountView(
+    h({
+      setup() {
+        provide(viewStateKey, { ui, state: {} });
+        return () =>
+          h(DocumentCamera, {
+            model: { c: capture, courierDocs: { identity: "الهوية" } },
+          });
+      },
+    }),
+  );
+  const actions = () =>
+    view
+      .findAll((node) => node.tag === "button")
+      .map((node) => node.props["data-action"]);
+  assert.ok(actions().includes("document-start"));
+  ui.cameraReady = true;
+  await nextTick();
+  assert.ok(actions().includes("document-shoot"));
+  assert.ok(!actions().includes("document-start"));
+  capture.photo = "data:image/png;base64,test";
+  ui.cameraError = "راجع الصورة";
+  await nextTick();
+  assert.ok(actions().includes("document-save"));
+  assert.ok(actions().includes("document-retake"));
+  assert.equal(
+    view.findAll((node) => node.tag === "img")[0].props.src,
+    capture.photo,
+  );
+  assert.ok(view.findAll((node) => node.text === "راجع الصورة").length);
+  view.unmount();
 });
 test("merchant and courier main views render through Vue", async () => {
   for (const role of ["MER-DEMO", "COU-DEMO"])
@@ -138,15 +233,38 @@ test("order wizard retains all four steps and form constraints", async () => {
   }
 });
 test("saved pickup and recipient choices fill editable locations and preserve notes", async () => {
-  const address = { id: "ADR-TEST", area: "المنصور", address: "مخزن", location: { lat: 33.32, lng: 44.35 } };
-  const recipient = { name: "والدة أحمد", phone: "07912345678", area: "زيونة", address: "بيت الوالدة", location: { lat: 33.33, lng: 44.46 } };
+  const address = {
+    id: "ADR-TEST",
+    area: "المنصور",
+    address: "مخزن",
+    location: { lat: 33.32, lng: 44.35 },
+  };
+  const recipient = {
+    name: "والدة أحمد",
+    phone: "07912345678",
+    area: "زيونة",
+    address: "بيت الوالدة",
+    location: { lat: 33.33, lng: 44.46 },
+  };
   const { app } = await renderPage("OrderWizard", (a) => {
     a.state.S.user.addresses = [address];
     a.state.S.user.customers = [recipient];
-    a.state.wizard = { step: 1, data: { kind: "merchant", sender: { ...a.state.S.user }, recipient: {} } };
+    a.state.wizard = {
+      step: 1,
+      data: { kind: "merchant", sender: { ...a.state.S.user }, recipient: {} },
+    };
   });
-  const form = { id: "order-form", elements: { phone: { value: recipient.phone }, notes: { value: "لا تضيع الملاحظات" } } };
-  const select = async (name, value) => app.dispatch("change", { target: { name, value, form, matches: () => false } });
+  const form = {
+    id: "order-form",
+    elements: {
+      phone: { value: recipient.phone },
+      notes: { value: "لا تضيع الملاحظات" },
+    },
+  };
+  const select = async (name, value) =>
+    app.dispatch("change", {
+      target: { name, value, form, matches: () => false },
+    });
   await select("pickupAddress", address.id);
   assert.deepEqual(app.state.wizard.data.sender.location, address.location);
   await select("pickupAddress", "new");
@@ -157,7 +275,10 @@ test("saved pickup and recipient choices fill editable locations and preserve no
   assert.equal(app.state.wizard.data.notes, "لا تضيع الملاحظات");
   await select("name", "مستلم جديد");
   assert.equal(app.state.wizard.data.recipient.phone, recipient.phone);
-  assert.deepEqual(app.state.wizard.data.recipient.location, recipient.location);
+  assert.deepEqual(
+    app.state.wizard.data.recipient.location,
+    recipient.location,
+  );
   app.state.S.user.customers.push({ ...recipient, address: "عنوان آخر" });
   app.state.wizard.data.recipient = {};
   await select("name", recipient.name);
@@ -269,7 +390,10 @@ test("wallet ledger keeps rows inside tbody and escapes merchant names", async (
       ],
     };
   });
-  assert.match(html, /<tbody><tr[^>]*><td>&lt;img src=x&gt;<\/td>/);
+  assert.match(
+    html.replace(/<!--[\s\S]*?-->/g, ""),
+    /<tbody><tr[^>]*><td>&lt;img src=x&gt;<\/td>/,
+  );
   assert.match(html, /orbit-motion/);
   assert.match(html, /orbit-shimmer/);
 });
@@ -330,32 +454,40 @@ test("all order action forms render with their validation fields", async () => {
 });
 
 test("registry progressively renders twenty cards including selectable draft and published filters", async () => {
-  const { createDemoData } = await import('./src/services/demoData.js');
-  for (const status of ['all', 'draft', 'published', 'transit']) {
-    const { html } = await renderPage('OrdersView', app => {
+  const { createDemoData } = await import("./src/services/demoData.js");
+  for (const status of ["all", "draft", "published", "transit"]) {
+    const { html } = await renderPage("OrdersView", (app) => {
       const data = createDemoData();
       app.state.S.orders = data.orders;
-      app.state.screen = 'registry';
+      app.state.screen = "registry";
       app.state.filter = status;
     });
     assert.equal((html.match(/<article/g) || []).length, 20);
     assert.match(html, /إظهار الكل/);
     assert.doesNotMatch(html, /id="registry-show-all"/);
-    if (['draft', 'published'].includes(status)) {
-      assert.equal((html.match(/class="order-card-selection"/g) || []).length, 20);
+    if (["draft", "published"].includes(status)) {
+      assert.equal(
+        (html.match(/class="order-card-selection"/g) || []).length,
+        20,
+      );
       assert.match(html, /<article[^>]*><label class="order-card-selection"/);
     } else assert.doesNotMatch(html, /class="order-card-selection"/);
   }
 });
 
 test("offline publish request remains in device drafts without creating a published order", async () => {
-  const { app } = await renderPage('AccountView');
-  const key = 'wasel-offline-' + app.state.S.user.id;
-  localStorage.setItem(key, '[]');
+  const { app } = await renderPage("AccountView");
+  const key = "wasel-offline-" + app.state.S.user.id;
+  localStorage.setItem(key, "[]");
   app.state.offline = true;
-  app.state.wizard = { data: { recipient: { name: 'Offline recipient' }, kind: 'merchant' } };
-  const button = { dataset: { action: 'save-order', publish: 'true' }, disabled: false };
-  await app.dispatch('click', { target: { closest: () => button } });
+  app.state.wizard = {
+    data: { recipient: { name: "Offline recipient" }, kind: "merchant" },
+  };
+  const button = {
+    dataset: { action: "save-order", publish: "true" },
+    disabled: false,
+  };
+  await app.dispatch("click", { target: { closest: () => button } });
   const drafts = JSON.parse(localStorage.getItem(key));
   assert.equal(drafts.length, 1);
   assert.equal(drafts[0].publish, false);
@@ -363,21 +495,30 @@ test("offline publish request remains in device drafts without creating a publis
   assert.match(app.ui.toast, /الجهاز/);
 });
 
-
 test("device draft opens a dedicated page using its stable id", async () => {
-  const { readDeviceDrafts } = await import('./src/services/sampleDrafts.js');
-  const { app } = await renderPage('AccountView');
-  const key = 'wasel-offline-' + app.state.S.user.id;
-  localStorage.setItem(key, JSON.stringify([{ recipient: { name: 'Draft page recipient' }, amount: 1000 }]));
+  const { readDeviceDrafts } = await import("./src/services/sampleDrafts.js");
+  const { app } = await renderPage("AccountView");
+  const key = "wasel-offline-" + app.state.S.user.id;
+  localStorage.setItem(
+    key,
+    JSON.stringify([
+      { recipient: { name: "Draft page recipient" }, amount: 1000 },
+    ]),
+  );
   const first = readDeviceDrafts(app.state.S.user)[0];
   assert.ok(first.localDraftId);
-  assert.equal(readDeviceDrafts(app.state.S.user)[0].localDraftId, first.localDraftId);
-  const button = { dataset: { action: 'view-local-draft', draftId: first.localDraftId } };
-  await app.dispatch('click', { target: { closest: () => button } });
-  assert.equal(app.state.screen, 'draft');
-  assert.equal(app.ui.page, 'DeviceDraftView');
-  const { h } = await import('vue');
-  const { renderToString } = await import('vue/server-renderer');
+  assert.equal(
+    readDeviceDrafts(app.state.S.user)[0].localDraftId,
+    first.localDraftId,
+  );
+  const button = {
+    dataset: { action: "view-local-draft", draftId: first.localDraftId },
+  };
+  await app.dispatch("click", { target: { closest: () => button } });
+  assert.equal(app.state.screen, "draft");
+  assert.equal(app.ui.page, "DeviceDraftView");
+  const { h } = await import("vue");
+  const { renderToString } = await import("vue/server-renderer");
   const html = await renderToString(h(app.currentView.value));
   assert.match(html, /Draft page recipient/);
   assert.match(html, /نشر الطلب/);

@@ -3,7 +3,7 @@ import { watch, onBeforeUnmount } from "vue";
 import { useWasel } from "./composables/useWasel.js";
 import InstallBanner from "./components/InstallBanner.vue";
 import AppDialog from "./components/AppDialog.vue";
-import RenderContent from "./components/RenderContent.js";
+import ViewContent from "./components/ViewContent.vue";
 import WorkspaceTools from "./components/WorkspaceTools.vue";
 import AccountOptions from "./components/AccountOptions.vue";
 import { useNotificationBadge } from "./composables/useNotificationBadge.js";
@@ -164,7 +164,7 @@ onBeforeUnmount(() => document.body.classList.remove("auth-mode"));
       aria-labelledby="document-camera-title"
       @close="cameraClosed"
     >
-      <RenderContent :content="ui.cameraContent" />
+      <ViewContent :content="ui.cameraContent" />
       <p v-if="ui.cameraError" class="camera-error" role="alert">
         {{ ui.cameraError }}
       </p>

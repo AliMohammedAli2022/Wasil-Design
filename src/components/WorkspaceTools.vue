@@ -1,9 +1,9 @@
 <script setup>
-import CloseIcon from "./CloseIcon.js";
+import CloseIcon from "./CloseIcon.vue";
 import { ref, reactive, computed, onMounted, nextTick } from "vue";
-import LocationMap from "./LocationMap.js";
+import LocationMap from "./LocationMap.vue";
 import LocationPanel from "./LocationPanel.vue";
-import { phoneDigits } from "../renderers/helpers.js";
+import { phoneDigits } from "../services/formFields.js";
 import { api } from "../services/api.js";
 import { areas, nearestArea, distance } from "../services/orderPolicy.js";
 const props = defineProps({ snapshot: Object, portal: String });

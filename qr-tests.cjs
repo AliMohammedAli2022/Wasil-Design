@@ -1,18 +1,21 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const jsQR = require("jsqr");
+require("./tools/register-vue-tests.cjs");
 
 test("rendered QR decodes to the exact handover or return code", async () => {
-  const { default: OrderQr } = await import("./src/components/OrderQr.js");
+  const { default: OrderQr } = await import("./src/components/OrderQr.vue");
+  const { h } = await import("vue");
+  const { renderToString } = await import("vue/server-renderer");
   for (const code of ["123456", "907231"]) {
-    const svg = OrderQr.setup({ code, label: "رمز" })();
-    const size = Number(svg.props.viewBox.split(" ")[2]),
+    const svg = await renderToString(h(OrderQr, { code, label: "رمز" }));
+    const size = Number(svg.match(/viewBox="0 0 (\d+) /)[1]),
       scale = 8,
       width = size * scale;
     const pixels = new Uint8ClampedArray(width * width * 4).fill(255);
-    for (const match of svg.children[1].props.d.matchAll(
-      /M(\d+) (\d+)h1v1h-1z/g,
-    )) {
+    for (const match of svg
+      .match(/<path d="([^"]+)"/)[1]
+      .matchAll(/M(\d+) (\d+)h1v1h-1z/g)) {
       for (
         let y = Number(match[2]) * scale;
         y < (Number(match[2]) + 1) * scale;

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import LocationMap from "./LocationMap.js";
+import LocationMap from "./LocationMap.vue";
 const props = defineProps({ groups: Array });
 const selectedId = ref(null);
 const selected = computed(() =>
