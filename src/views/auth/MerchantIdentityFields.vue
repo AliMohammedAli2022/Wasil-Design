@@ -8,7 +8,7 @@ defineProps({ model: { type: Object, required: true } });
   <FormInput
     :model="{
       name: 'name',
-      label: 'الاسم / اسم النشاط',
+      label: 'الاسم الثلاثي',
       value: model.r.name,
       attrs: 'required maxlength=&quot;80&quot;',
     }"

@@ -7,6 +7,8 @@ const props = defineProps({
   location: Object,
   editable: Boolean,
   required: Boolean,
+  showHint: { type: Boolean, default: true },
+  showExternalActions: { type: Boolean, default: true },
   name: { type: String, default: "الموقع" },
 });
 const emit = defineEmits(["update:location"]);
@@ -89,7 +91,7 @@ function gps() {
         aria-label="حدد الموقع من الخريطة"
         @invalid="error = 'حدد الموقع على الخريطة أولاً.'"
       />
-      <p class="file-help">
+      <p v-if="showHint" class="file-help">
         {{
           point
             ? "تم تحديد الموقع. اسحب العلامة لتعديله."
@@ -98,10 +100,18 @@ function gps() {
       </p>
     </template>
     <div class="location-panel-actions">
-      <a v-if="point" :href="url" target="_blank" rel="noopener noreferrer"
+      <a
+        v-if="point && showExternalActions"
+        :href="url"
+        target="_blank"
+        rel="noopener noreferrer"
         >فتح الخريطة</a
       >
-      <LocationShare v-if="point" :location="point" :name="name" />
+      <LocationShare
+        v-if="point && showExternalActions"
+        :location="point"
+        :name="name"
+      />
       <button
         v-if="editable"
         type="button"

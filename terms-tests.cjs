@@ -87,6 +87,8 @@ test("registration saves the consent receipt for each account type", async () =>
     const { user } = await api("/api/register", {
       role,
       name: "تسجيل تجريبي",
+      businessName: "نشاط تجريبي",
+      verificationCode: "111111",
       phone: "07912345678",
       password: "password123",
       confirmPassword: "password123",

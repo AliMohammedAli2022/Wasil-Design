@@ -9,5 +9,7 @@ defineProps({ model: { type: Object, required: true } });
     :location="model.loc"
     :editable="!model.readonly"
     :required="!model.readonly"
+    :show-hint="model.showHint !== false"
+    :show-external-actions="model.showExternalActions !== false"
   ></LocationPanel>
 </template>

@@ -172,7 +172,7 @@ test("VIP excludes simultaneous jobs in both reservation directions", async () =
 test("multiple merchants share budget and weight limits; exclusions preserve other orders", async () => {
   const t = await setup();
   const first = await t.create({ amount: 20000, weight: 40 });
-  await t.api("/api/register", { role: "merchant", name: "تاجر ثان", phone: "07912345670", province: "بغداد", area: "الكرادة", address: "مخزن ثان", location: { lat: 33.301, lng: 44.43 } });
+  await t.api("/api/register", { businessName: "نشاط تجريبي", verificationCode: "111111", role: "merchant", name: "تاجر ثان", phone: "07912345670", province: "بغداد", area: "الكرادة", address: "مخزن ثان", location: { lat: 33.301, lng: 44.43 } });
   await t.api("/api/login", { role: "merchant", phone: "07912345670" });
   const second = await t.create({ amount: 25000, weight: 40, sender: { ...t.template.sender, address: "مخزن ثان", location: { lat: 33.301, lng: 44.43 } } });
   const cashHeavy = await t.create({ amount: 10000, weight: 1 });
@@ -363,7 +363,7 @@ test("supported networks, per-role identity, automatic customer save and address
     }),
   );
   for (const role of ["merchant", "courier"])
-    await t.api("/api/register", { role, name: "A", phone: "07912345678" });
+    await t.api("/api/register", { businessName: "نشاط تجريبي", verificationCode: "111111", role, name: "A", phone: "07912345678" });
   await t.api("/api/addresses", {
     name: "مخزن",
     area: "الكرادة",
@@ -403,7 +403,7 @@ test("saved orders remember multiple recipients per phone and pickup locations w
   const reopened = t.createDemoApi(t.storage);
   await reopened("/api/login", { role: "merchant" });
   assert.deepEqual((await reopened("/api/state")).user.customers, state.user.customers);
-  await reopened("/api/register", { role: "merchant", name: "تاجر آخر", phone: "07912345672", province: "بغداد" });
+  await reopened("/api/register", { businessName: "نشاط تجريبي", verificationCode: "111111", role: "merchant", name: "تاجر آخر", phone: "07912345672", province: "بغداد" });
   await reopened("/api/login", { role: "merchant", phone: "07912345672" });
   assert.equal((await reopened("/api/state")).user.customers.length, 0);
 });

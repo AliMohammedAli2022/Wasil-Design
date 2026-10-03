@@ -7,8 +7,14 @@ defineProps({ model: { type: Object, required: true } });
 <template>
   <DetailRow
     :model="{
-      label: 'الاسم',
+      label: 'الاسم الثلاثي',
       value: model.r.name,
+    }"
+  />
+  <DetailRow
+    :model="{
+      label: 'اسم النشاط التجاري',
+      value: model.r.businessName,
     }"
   />
   <DetailRow
@@ -34,8 +40,5 @@ defineProps({ model: { type: Object, required: true } });
       ><img alt="صورة التسجيل" :src="p"
     /></template>
   </div>
-  <p class="status-note blue">
-    يصبح الحساب جاهزاً بعد إكمال التسجيل. التحقق الآلي عبر SMS غير مربوط في
-    النسخة المحلية.
-  </p>
+  <p class="status-note blue">سيصبح الحساب جاهزا بعد ادخال كود التحقق</p>
 </template>

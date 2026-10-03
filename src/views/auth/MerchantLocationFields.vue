@@ -9,6 +9,8 @@ defineProps({ model: { type: Object, required: true } });
   <LocationFields
     :model="{
       loc: model.r.location,
+      showHint: false,
+      showExternalActions: false,
     }"
   />
   <template v-if="workflowRole(model.r.role) === 'merchant'"

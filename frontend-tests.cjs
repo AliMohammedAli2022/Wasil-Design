@@ -403,3 +403,32 @@ test("October samples add twenty per status once without replacing existing orde
     );
   }
 });
+
+test("merchant and free registration require the demo code before creating an account", async () => {
+  for (const role of ["merchant", "free"]) {
+    const { api, storage, key, createDemoApi } = await setup();
+    await api("/api/login", { role });
+    const before = storage.getItem(key);
+    const registration = {
+      role, name: "علي محمد كريم", businessName: "متجر الأناقة",
+      phone: "07912345678", password: "private-password", activity: "shop",
+    };
+    for (const verificationCode of [undefined, "", "11111", "1111111", "١١١١١١", "000000", "abcdef"]) {
+      await assert.rejects(api("/api/register", { ...registration, verificationCode }), /كود التحقق/);
+      assert.equal(storage.getItem(key), before);
+    }
+    await assert.rejects(api("/api/register", { ...registration, businessName: " ", verificationCode: "111111" }), /اسم النشاط التجاري/);
+    const { user } = await api("/api/register", { ...registration, verificationCode: "111111" });
+    assert.equal(user.name, registration.name);
+    assert.equal(user.businessName, registration.businessName);
+    assert.equal(user.registrationVerification.method, "demo");
+    assert.ok(Number.isFinite(Date.parse(user.registrationVerification.verifiedAt)));
+    assert.equal(user.verificationCode, undefined);
+    assert.equal(user.password, undefined);
+    assert.equal(storage.getItem(key).includes('"verificationCode"'), false);
+    const reopened = createDemoApi(storage);
+    await reopened("/api/login", { role, phone: registration.phone });
+    assert.equal((await reopened("/api/state")).user.id, user.id);
+    await assert.rejects(reopened("/api/register", { ...registration, verificationCode: "111111" }), /مسجل/);
+  }
+});

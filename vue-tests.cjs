@@ -287,8 +287,8 @@ test("saved pickup and recipient choices fill editable locations and preserve no
   assert.deepEqual(app.state.wizard.data.recipient, {});
 });
 
-test("registration preserves merchant steps and five courier documents", async () => {
-  for (let step = 0; step < 4; step++) {
+test("registration separates identity and business, simplifies location and includes verification", async () => {
+  for (let step = 0; step < 5; step++) {
     const { html } = await renderPage(
       "MerchantRegistration",
       (a) =>
@@ -302,6 +302,28 @@ test("registration preserves merchant steps and five courier documents", async (
         }),
     );
     assert.match(html, /register-form/);
+    if (step === 0) {
+      assert.match(html, /الاسم الثلاثي/);
+      assert.doesNotMatch(html, /الاسم \/ اسم النشاط/);
+    }
+    if (step === 1) {
+      assert.ok(html.indexOf('name="businessName"') < html.indexOf('name="activity"'));
+      assert.match(html, /اسم النشاط التجاري/);
+    }
+    if (step === 2) {
+      assert.doesNotMatch(html, /فتح الخريطة|مشاركة الموقع|اسحب العلامة/);
+      assert.match(html, /تحديد موقعي الحالي/);
+    }
+    if (step === 3) {
+      assert.match(html, /سيصبح الحساب جاهزا بعد ادخال كود التحقق/);
+      assert.doesNotMatch(html, /SMS|النسخة المحلية/);
+    }
+    if (step === 4) {
+      assert.match(html, /name="verificationCode"/);
+      assert.match(html, /autocomplete="one-time-code"/);
+      assert.match(html, /تحقق وادخل/);
+      assert.doesNotMatch(html, /wizard-steps/);
+    }
   }
   const { html } = await renderPage(
     "CourierRegistration",

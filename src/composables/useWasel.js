@@ -205,9 +205,10 @@ export function useWasel(application = currentApplication()) {
     };
     registrationView();
   }
-  function registerAccount(registration) {
+  function registerAccount(registration, verificationCode) {
     return api("/api/register", {
       ...registration,
+      verificationCode,
       termsAcceptance: termsConsent.read(application.id),
     });
   }
@@ -991,9 +992,15 @@ export function useWasel(application = currentApplication()) {
         Object.assign(
           r,
           Object.fromEntries(
-            Object.entries(f).filter(([k, v]) => typeof v === "string"),
+            Object.entries(f).filter(
+              ([k, v]) => typeof v === "string" && k !== "verificationCode",
+            ),
           ),
         );
+        if (r.step === 1) {
+          r.businessName = r.businessName?.trim();
+          if (!r.businessName) throw Error("أدخل اسم النشاط التجاري");
+        }
         if (
           r.step === 1 &&
           workflowRole(r.role) === "merchant" &&
@@ -1010,8 +1017,8 @@ export function useWasel(application = currentApplication()) {
             if (form.elements[k]?.files[0])
               r.photos.push(await imageData(form.elements[k].files[0]));
         }
-        if (r.step === 3) {
-          await registerAccount(r);
+        if (r.step === 4) {
+          await registerAccount(r, f.verificationCode);
           await login(r.role, r.phone, r.password);
           toast("تم إنشاء الحساب");
           state.registration = null;

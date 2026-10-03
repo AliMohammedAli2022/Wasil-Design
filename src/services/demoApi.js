@@ -4,6 +4,7 @@ import {
   workflowEventLabels,
 } from "./orderStatuses.js";
 import { capacityProblem } from "./reservationCapacity.js";
+import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { createDemoData, statuses, settings as defaults } from "./demoData.js";
@@ -1230,10 +1231,24 @@ export function createDemoApi(
         "كلمتا المرور غير متطابقتين",
       );
       must(p.activity !== "ecommerce", "التجارة الإلكترونية قريباً");
+      const verification =
+        workflowRole(p.role) === "merchant"
+          ? verifyDemoRegistrationCode(p.verificationCode)
+          : null;
+      if (workflowRole(p.role) === "merchant")
+        must(p.businessName?.trim(), "أدخل اسم النشاط التجاري");
       const uid = id({ merchant: "MER", free: "FREE", courier: "COU" }[p.role]);
-      const { password, confirmPassword, documents, photos, ...v } = p;
+      const {
+        password,
+        confirmPassword,
+        documents,
+        photos,
+        verificationCode,
+        ...v
+      } = p;
       const u = {
         ...v,
+        ...(verification ? { registrationVerification: verification } : {}),
         role: workflowRole(p.role),
         accountType: p.role,
         id: uid,

@@ -43,6 +43,12 @@ export function createAuthViews(context) {
       });
     else if (r.step === 1)
       fields = [
+        input(
+          "businessName",
+          "اسم النشاط التجاري",
+          r.businessName,
+          'required maxlength="100"',
+        ),
         workflowRole(r.role) === "merchant"
           ? select(
               "activity",
@@ -80,7 +86,7 @@ export function createAuthViews(context) {
           r,
         },
       });
-    else
+    else if (r.step === 3)
       fields = createView(MerchantReviewFields, {
         model: {
           r,

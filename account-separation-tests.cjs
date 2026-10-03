@@ -100,6 +100,8 @@ test("same phone can register separate merchant and free identities and cannot c
   const courier = createDemoApi(storage, ["courier"]);
   const payload = {
     name: "حساب جديد",
+    businessName: "نشاط تجريبي",
+    verificationCode: "111111",
     phone: "07912345678",
     activity: "shop",
     password: "password123",
