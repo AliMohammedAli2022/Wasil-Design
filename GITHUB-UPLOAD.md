@@ -1,8 +1,8 @@
 # نشر واصل على GitHub Pages
 
-المستودع: https://github.com/iraqtech1/wasl
+المستودع: https://github.com/AliMohammedAli2022/Wasil-Design
 
-التطبيق: https://iraqtech1.github.io/wasl/
+التطبيق: https://alimohammedali2022.github.io/Wasil-Design/
 
 النسخة الحالية واجهة Vue مستقلة ببيانات تجريبية محلية، تعمل على Pages دون خادم.
 

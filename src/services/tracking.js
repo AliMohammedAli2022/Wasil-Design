@@ -1,6 +1,6 @@
 export function trackingLink(
   order,
-  base = globalThis.location?.href || "https://iraqtech1.github.io/wasl/",
+  base = globalThis.location?.href || "https://alimohammedali2022.github.io/Wasil-Design/",
 ) {
   const safe = {
     id: order.id,
