@@ -1,14 +1,31 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "node:path";
-export default defineConfig({
-  root: "web",
-  publicDir: "../public",
-  plugins: [vue()],
-  base: process.env.PAGES_BUILD === "1" ? "/Wasil-Design/" : "/",
-  server: { host: "127.0.0.1", port: 5173 },
-  build: {
-    outDir: path.resolve(process.env.PAGES_BUILD === "1" ? "site" : "dist"),
-    emptyOutDir: true,
-  },
+export default defineConfig(({ mode }) => {
+  const courier = mode === "courier";
+  const pages = process.env.PAGES_BUILD === "1";
+  const appName = courier ? "واصل — المندوب" : "واصل — التاجر والتوصيل الحر";
+  return {
+    root: "web",
+    publicDir: "../public",
+    plugins: [
+      vue(),
+      {
+        name: "wasel-application-entry",
+        transformIndexHtml: (html) =>
+          html
+            .replaceAll("%APP_ID%", courier ? "courier" : "merchant")
+            .replaceAll("%APP_NAME%", appName),
+      },
+    ],
+    resolve: {
+      alias: [{ find: /^\/src\//, replacement: path.resolve("src") + "/" }],
+    },
+    base: (pages ? "/Wasil-Design/" : "/") + (courier ? "courier/" : ""),
+    server: { host: "127.0.0.1", port: courier ? 5174 : 5173 },
+    build: {
+      outDir: path.resolve(pages ? "site" : "dist", courier ? "courier" : ""),
+      emptyOutDir: true,
+    },
+  };
 });

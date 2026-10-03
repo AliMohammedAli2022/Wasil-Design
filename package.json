@@ -7,11 +7,12 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:courier": "vite --mode courier",
     "build": "node tools/build.mjs",
     "build:pages": "node tools/build.mjs --pages",
     "prestart": "node tools/build.mjs",
     "start": "vite preview --host 0.0.0.0 --port 4173",
-    "test": "node --test vue-tests.cjs frontend-tests.cjs notification-tests.cjs phone-tests.cjs workflow-tests.cjs qr-tests.cjs",
+    "test": "node --test vue-tests.cjs frontend-tests.cjs notification-tests.cjs phone-tests.cjs workflow-tests.cjs qr-tests.cjs account-separation-tests.cjs",
     "check": "node tools/verify-vue.mjs",
     "start:server": "node server.cjs",
     "test:server": "node tests.cjs"

@@ -1,6 +1,7 @@
 <script setup>
 import { watch, onBeforeUnmount } from "vue";
 import { useWasel } from "./composables/useWasel.js";
+import { accountType } from "./services/accounts.js";
 import InstallBanner from "./components/InstallBanner.vue";
 import AppDialog from "./components/AppDialog.vue";
 import ViewContent from "./components/ViewContent.vue";
@@ -52,7 +53,7 @@ onBeforeUnmount(() => document.body.classList.remove("auth-mode"));
           <div>
             <strong>واصل</strong
             ><span id="role-badge">{{
-              roleNames[state.S?.user.role] || "منظومة التوصيل"
+              roleNames[accountType(state.S?.user)] || "منظومة التوصيل"
             }}</span>
           </div>
         </div>

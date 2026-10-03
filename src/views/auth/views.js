@@ -1,4 +1,5 @@
 import { createView } from "../../services/viewContent.js";
+import { workflowRole } from "../../services/accounts.js";
 import AuthView from "./AuthView.vue";
 import MerchantIdentityFields from "./MerchantIdentityFields.vue";
 import MerchantLocationFields from "./MerchantLocationFields.vue";
@@ -11,11 +12,12 @@ import CourierRegistration from "./CourierRegistration.vue";
 import { PHONE_ATTRIBUTES } from "../../services/formFields.js";
 export function createAuthViews(context) {
   function authView() {
-    const { state, roleNames } = context();
+    const { state, roleNames, application } = context();
     return createView(AuthView, {
       model: {
         state,
         roleNames,
+        application,
       },
     });
   }
@@ -41,7 +43,7 @@ export function createAuthViews(context) {
       });
     else if (r.step === 1)
       fields = [
-        r.role === "merchant"
+        workflowRole(r.role) === "merchant"
           ? select(
               "activity",
               "نوع النشاط",

@@ -40,7 +40,10 @@ self.addEventListener("fetch", (event) => {
     event.request.method !== "GET" ||
     url.origin !== BASE.origin ||
     !url.pathname.startsWith(BASE.pathname) ||
-    relative.startsWith("api/")
+    relative.startsWith("api/") ||
+    // The parent application must never cache or serve the courier app's entry.
+    relative.startsWith("courier/") ||
+    relative === "courier"
   )
     return;
   event.respondWith(
@@ -52,18 +55,15 @@ self.addEventListener("fetch", (event) => {
           await cache.put(event.request, response.clone()).catch(() => {});
         return response;
       } catch {
-        const saved = await cache.match(event.request);
+        // Static public assets do not vary by Origin. Ignore preview-server Vary
+        // headers, and match precached files when the page adds a cache-busting query.
+        const saved =
+          (await cache.match(event.request, { ignoreVary: true })) ||
+          (await cache.match(url.origin + url.pathname, { ignoreVary: true }));
         if (saved) return saved;
         if (
           event.request.mode === "navigate" &&
-          [
-            "",
-            "index.html",
-            "merchant/",
-            "courier/",
-            "merchant",
-            "courier",
-          ].includes(relative)
+          ["", "index.html", "merchant/", "merchant"].includes(relative)
         )
           return (
             (await cache.match(new URL("index.html", BASE).href)) ||

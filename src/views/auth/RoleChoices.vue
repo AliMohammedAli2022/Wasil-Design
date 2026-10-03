@@ -11,7 +11,7 @@ defineProps({ model: { type: Object, required: true } });
     <p>اختار حسابك، وخلّي الباقي علينا.</p>
   </div>
   <div class="glass-role-grid">
-    <template v-for="r in ['merchant', 'courier']"
+    <template v-for="r in model.application.accounts" :key="r"
       ><button
         type="button"
         :class="'glass-role ' + r"
@@ -27,7 +27,7 @@ defineProps({ model: { type: Object, required: true } });
         <strong>{{ model.roleNames[r] }}</strong>
         <span class="role-description"
           ><template v-if="r === 'merchant'">طلباتك بيد أمينة</template>
-          <template v-else>كل مشوار، فرصة جديدة</template></span
+          <template v-else>توصيلك بكل سهولة</template></span
         >
         <span class="role-enter"
           >{{ "دخول " }}

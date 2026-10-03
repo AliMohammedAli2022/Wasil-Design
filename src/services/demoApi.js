@@ -1,4 +1,6 @@
 import { capacityProblem } from "./reservationCapacity.js";
+import { accountType, workflowRole } from "./accounts.js";
+import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { createDemoData, statuses, settings as defaults } from "./demoData.js";
 import { rememberOrderPlaces } from "./addressBook.js";
 import {
@@ -28,7 +30,10 @@ const profileFields = [
   "phone2",
   "location",
 ];
-export function createDemoApi(storage = globalThis.localStorage) {
+export function createDemoApi(
+  storage = globalThis.localStorage,
+  allowedAccounts = ["merchant", "free", "courier"],
+) {
   let data = createDemoData(),
     currentId = null;
   try {
@@ -43,7 +48,9 @@ export function createDemoApi(storage = globalThis.localStorage) {
   if (!data.expandedDemoCatalog) {
     const sample = createDemoData();
     if (data.users.some((u) => u.id === "MER-DEMO")) {
-      for (const order of sample.orders) {
+      for (const order of sample.orders.filter(
+        (order) => order.merchant === "MER-DEMO",
+      )) {
         const existing = data.orders.find((o) => o.id === order.id);
         if (!existing) data.orders.push(order);
         else if (existing.recipient?.name?.startsWith("مستلم تجريبي")) {
@@ -58,19 +65,23 @@ export function createDemoApi(storage = globalThis.localStorage) {
     for (const courier of createDemoData().users.filter((u) =>
       u.id.startsWith("COU-DEMO-"),
     )) {
-      if (!data.users.some((u) => u.id === courier.id)) data.users.push(courier);
+      if (!data.users.some((u) => u.id === courier.id))
+        data.users.push(courier);
     }
     data.expandedDemoCouriers = true;
   }
   if (!data.expandedOctoberOrders) {
-    if (data.users.some(u => u.id === "MER-DEMO")) {
-      const known = new Set(data.orders.map(o => o.id));
-      for (const order of createDemoData().orders.filter(o => o.id.startsWith("ORD-SAMPLE-OCT-"))) {
+    if (data.users.some((u) => u.id === "MER-DEMO")) {
+      const known = new Set(data.orders.map((o) => o.id));
+      for (const order of createDemoData().orders.filter((o) =>
+        o.id.startsWith("ORD-SAMPLE-OCT-"),
+      )) {
         if (!known.has(order.id)) data.orders.push(order);
       }
     }
     data.expandedOctoberOrders = true;
   }
+  if (!data.expandedFreeAccount) addFreeDeliveryDemo(data, createDemoData());
   data.config = { ...defaults, ...data.config };
   data.tickets ??= [];
   data.audit ??= [];
@@ -130,9 +141,9 @@ export function createDemoApi(storage = globalThis.localStorage) {
   for (const o of data.orders) {
     if (o.status === "returning" && !o.returnArrived && !o.returnCode)
       o.returnCode = String(Math.floor(100000 + Math.random() * 900000));
-    if (o.id.startsWith("ORD-DEMO-") && o.status === "partial_pending")
+    if (/^(?:FREE-)?ORD-DEMO-/.test(o.id) && o.status === "partial_pending")
       o.partialDelivered = true;
-    if (o.id.startsWith("ORD-DEMO-") && o.service === "vip")
+    if (/^(?:FREE-)?ORD-DEMO-/.test(o.id) && o.service === "vip")
       o.fee = Math.max(o.fee, o.baseFee + data.config.vipSurcharge);
   }
   const feesActive = () =>
@@ -204,7 +215,8 @@ export function createDemoApi(storage = globalThis.localStorage) {
     o.extensionRequest = null;
     o.editPending = false;
     o.publishedAt = now();
-    o.offerRound = (o.offerRound || 0) + 1; o.waitNotified = false;
+    o.offerRound = (o.offerRound || 0) + 1;
+    o.waitNotified = false;
     o.courierInfo = null;
   }
   function sweep() {
@@ -230,20 +242,40 @@ export function createDemoApi(storage = globalThis.localStorage) {
 
       if (["reserved", "approaching"].includes(o.status) && o.deadline) {
         const remaining = Date.parse(o.deadline) - Date.now();
-        if (remaining <= 0) release(o, "انتهت مهلة الوصول — أُلغي الحجز وأعيد نشر الطلب تلقائياً");
-        else if (remaining <= 120000 && o.arrivalWarnedDeadline !== o.deadline) {
-          notify(o.courier, "باقي دقيقتين أو أقل للوصول إلى الاستلام؛ يمكنك تمديد المهلة ضمن الحد المتاح", o.id);
+        if (remaining <= 0)
+          release(
+            o,
+            "انتهت مهلة الوصول — أُلغي الحجز وأعيد نشر الطلب تلقائياً",
+          );
+        else if (
+          remaining <= 120000 &&
+          o.arrivalWarnedDeadline !== o.deadline
+        ) {
+          notify(
+            o.courier,
+            "باقي دقيقتين أو أقل للوصول إلى الاستلام؛ يمكنك تمديد المهلة ضمن الحد المتاح",
+            o.id,
+          );
           o.arrivalWarnedDeadline = o.deadline;
         }
       }
       if (
         o.status === "published" &&
         !o.waitNotified &&
-        data.users.some((c) => c.role === "courier" && eligible(c, o, data.config) && !capacityProblem(c, o, data.orders, data.config)) &&
+        data.users.some(
+          (c) =>
+            c.role === "courier" &&
+            eligible(c, o, data.config) &&
+            !capacityProblem(c, o, data.orders, data.config),
+        ) &&
         Date.now() - Date.parse(o.publishedAt || o.createdAt) >
           data.config.offerAfterMinutes * 60000
       ) {
-        notify(o.merchant, "طلبك لم يُحجز رغم وجود مناديب متاحين؛ فُتحت عروض أجور التوصيل", o.id);
+        notify(
+          o.merchant,
+          "طلبك لم يُحجز رغم وجود مناديب متاحين؛ فُتحت عروض أجور التوصيل",
+          o.id,
+        );
         o.waitNotified = true;
       }
     }
@@ -264,7 +296,10 @@ export function createDemoApi(storage = globalThis.localStorage) {
     );
     o.courier = c.id;
     o.pickupDistanceKm = distance(c.location, o.sender.location);
-    o.originalMinutes = Math.max(3, Math.ceil(o.pickupDistanceKm * 3 * (1 + data.config.arrivalBuffer / 100)));
+    o.originalMinutes = Math.max(
+      3,
+      Math.ceil(o.pickupDistanceKm * 3 * (1 + data.config.arrivalBuffer / 100)),
+    );
     o.deadline = new Date(Date.now() + o.originalMinutes * 60000).toISOString();
     o.extensionMinutes = 0;
     o.extended = false;
@@ -404,7 +439,16 @@ export function createDemoApi(storage = globalThis.localStorage) {
       ratings: data.ratings.filter(
         (r) => r.owner === u.id || r.target === u.id,
       ),
-      offers: data.offers.filter((r) => orders.some((o) => o.id === r.orderId && o.status === "published" && (r.round || 0) === (o.offerRound || 0)) && (u.role === "merchant" || r.owner === u.id)),
+      offers: data.offers.filter(
+        (r) =>
+          orders.some(
+            (o) =>
+              o.id === r.orderId &&
+              o.status === "published" &&
+              (r.round || 0) === (o.offerRound || 0),
+          ) &&
+          (u.role === "merchant" || r.owner === u.id),
+      ),
       notifications: data.notifications.filter((r) => r.owner === u.id),
       couriers: data.users
         .filter(
@@ -440,10 +484,7 @@ export function createDemoApi(storage = globalThis.localStorage) {
       [p.weight, p.length, p.width, p.height].every((v) => Number(v) > 0),
       "الوزن والأبعاد يجب أن تكون أكبر من صفر",
     );
-    must(
-      p.recipient?.name && p.recipient?.area,
-      "أكمل بيانات المستلم",
-    );
+    must(p.recipient?.name && p.recipient?.area, "أكمل بيانات المستلم");
     must(
       supportedPhone(p.recipient.phone),
       "الهاتف يجب أن يبدأ بـ077 أو078 أو079 ويتكون من 11 رقماً",
@@ -467,11 +508,14 @@ export function createDemoApi(storage = globalThis.localStorage) {
     );
     must(p.returnFee <= p.fee, "أجرة الراجع لا تتجاوز التوصيل");
     must(
-      p.nature !== "cold" || orderVehicles(p).every(v => v === "refrigerated"),
+      p.nature !== "cold" ||
+        orderVehicles(p).every((v) => v === "refrigerated"),
       "الشحنة المبردة تحتاج سيارة مبردة",
     );
     must(
-      orderVehicles(p).length > 0 && orderVehicles(p).length <= 2 && orderVehicles(p).every(v => vehicleFits(v, p, data.config)),
+      orderVehicles(p).length > 0 &&
+        orderVehicles(p).length <= 2 &&
+        orderVehicles(p).every((v) => vehicleFits(v, p, data.config)),
       "حمولة الشحنة تتجاوز سعة المركبة",
     );
     must(
@@ -526,7 +570,8 @@ export function createDemoApi(storage = globalThis.localStorage) {
       ];
       for (const k of fields) if (p[k] !== undefined) o[k] = copy(p[k]);
       rememberOrderPlaces(u, o, id);
-      o.offerRound = (o.offerRound || 0) + 1; o.waitNotified = false;
+      o.offerRound = (o.offerRound || 0) + 1;
+      o.waitNotified = false;
       if (["reserved", "approaching"].includes(o.status)) o.editPending = true;
       change(
         o,
@@ -575,16 +620,29 @@ export function createDemoApi(storage = globalThis.localStorage) {
             : "cancelled",
       );
       o.publishedAt = now();
-      o.offerRound = (o.offerRound || 0) + 1; o.waitNotified = false;
+      o.offerRound = (o.offerRound || 0) + 1;
+      o.waitNotified = false;
       return;
     }
     if (a === "resolve_exclusion") {
-      merchant(); requireState(["draft"]);
+      merchant();
+      requireState(["draft"]);
       must(o.exclusionPending, "لا يوجد طلب مستثنى بانتظار القرار");
-      must(["published", "draft"].includes(p.resolution), "اختر إعادة النشر أو إبقاءه محفوظاً");
-      o.exclusionPending = false; o.publishedAt = p.resolution === "published" ? now() : null;
-      o.offerRound = (o.offerRound || 0) + 1; o.waitNotified = false;
-      change(o, p.resolution, p.resolution === "published" ? "أعاد التاجر نشر الطلب المستثنى" : "أبقى التاجر الطلب المستثنى محفوظاً للتعديل");
+      must(
+        ["published", "draft"].includes(p.resolution),
+        "اختر إعادة النشر أو إبقاءه محفوظاً",
+      );
+      o.exclusionPending = false;
+      o.publishedAt = p.resolution === "published" ? now() : null;
+      o.offerRound = (o.offerRound || 0) + 1;
+      o.waitNotified = false;
+      change(
+        o,
+        p.resolution,
+        p.resolution === "published"
+          ? "أعاد التاجر نشر الطلب المستثنى"
+          : "أبقى التاجر الطلب المستثنى محفوظاً للتعديل",
+      );
       return;
     }
     if (a === "reserve") {
@@ -605,8 +663,17 @@ export function createDemoApi(storage = globalThis.localStorage) {
       );
       const problem = capacityProblem(u, o, data.orders, data.config);
       must(!problem, problem);
-      must(money(p.fee) && Number(p.fee) > 0 && Number(p.fee) >= o.returnFee && (o.service !== "vip" || Number(p.fee) >= o.baseFee + data.config.vipSurcharge), "أجرة العرض لا تغطي أجور الراجع أو زيادة VIP");
-      data.offers = data.offers.filter((v) => !(v.orderId === o.id && v.owner === u.id));
+      must(
+        money(p.fee) &&
+          Number(p.fee) > 0 &&
+          Number(p.fee) >= o.returnFee &&
+          (o.service !== "vip" ||
+            Number(p.fee) >= o.baseFee + data.config.vipSurcharge),
+        "أجرة العرض لا تغطي أجور الراجع أو زيادة VIP",
+      );
+      data.offers = data.offers.filter(
+        (v) => !(v.orderId === o.id && v.owner === u.id),
+      );
       data.offers.push({
         id: id("OFFER"),
         owner: u.id,
@@ -625,14 +692,30 @@ export function createDemoApi(storage = globalThis.localStorage) {
       const offer = data.offers.find(
         (v) => v.id === p.offer && v.orderId === o.id,
       );
-      must(offer && (offer.round || 0) === (o.offerRound || 0), "العرض لم يعد متاحاً؛ اطلب عرضاً جديداً");
-      must(offer.fee >= o.returnFee && (o.service !== "vip" || offer.fee >= o.baseFee + data.config.vipSurcharge), "العرض لا يغطي أجور الطلب");
+      must(
+        offer && (offer.round || 0) === (o.offerRound || 0),
+        "العرض لم يعد متاحاً؛ اطلب عرضاً جديداً",
+      );
+      must(
+        offer.fee >= o.returnFee &&
+          (o.service !== "vip" ||
+            offer.fee >= o.baseFee + data.config.vipSurcharge),
+        "العرض لا يغطي أجور الطلب",
+      );
       reserve(
         o,
         data.users.find((c) => c.id === offer.owner),
       );
       o.fee = offer.fee;
-      change(o, o.status, "وافق التاجر على عرض " + offer.name + " بأجرة " + offer.fee + " د.ع وحُجز الطلب له");
+      change(
+        o,
+        o.status,
+        "وافق التاجر على عرض " +
+          offer.name +
+          " بأجرة " +
+          offer.fee +
+          " د.ع وحُجز الطلب له",
+      );
       return;
     }
     if (a === "raise_fee") {
@@ -640,7 +723,8 @@ export function createDemoApi(storage = globalThis.localStorage) {
       requireState(["published"]);
       must(Number(p.fee) > o.fee, "الأجرة الجديدة يجب أن تكون أعلى");
       o.fee = Number(p.fee);
-      o.offerRound = (o.offerRound || 0) + 1; o.waitNotified = false;
+      o.offerRound = (o.offerRound || 0) + 1;
+      o.waitNotified = false;
       change(o, o.status, "زيادة أجرة التوصيل");
       return;
     }
@@ -648,11 +732,18 @@ export function createDemoApi(storage = globalThis.localStorage) {
       courier();
       requireState(["reserved", "approaching"]);
       must(Date.parse(o.deadline) > Date.now(), "انتهت مهلة الحجز");
-      const used = o.extensionMinutes ?? (o.extended ? Math.ceil(o.originalMinutes / 2) : 0);
+      const used =
+        o.extensionMinutes ??
+        (o.extended ? Math.ceil(o.originalMinutes / 2) : 0);
       const max = Math.ceil(o.originalMinutes / 2) - used;
       const minutes = Number(p.minutes);
-      must(Number.isInteger(minutes) && minutes >= 1 && minutes <= max, "تجاوزت الحد المتبقي للتمديد");
-      o.deadline = new Date(Date.parse(o.deadline) + minutes * 60000).toISOString();
+      must(
+        Number.isInteger(minutes) && minutes >= 1 && minutes <= max,
+        "تجاوزت الحد المتبقي للتمديد",
+      );
+      o.deadline = new Date(
+        Date.parse(o.deadline) + minutes * 60000,
+      ).toISOString();
       o.extensionMinutes = used + minutes;
       o.extended = true;
       o.extensionRequest = null;
@@ -756,14 +847,17 @@ export function createDemoApi(storage = globalThis.localStorage) {
       requireState(["reserved", "approaching"]);
       must(!o.editPending, "وافق على التعديل أولاً");
       const point = p.location || u.location;
-      must(point && Number.isFinite(point.lat) && Number.isFinite(point.lng), "تعذر تحديد الموقع؛ حدّث GPS");
-      must(!p.accuracy || p.accuracy <= data.config.arrivalRadiusKm * 1000, "دقة GPS ضعيفة؛ أعد المحاولة");
+      must(
+        point && Number.isFinite(point.lat) && Number.isFinite(point.lng),
+        "تعذر تحديد الموقع؛ حدّث GPS",
+      );
+      must(
+        !p.accuracy || p.accuracy <= data.config.arrivalRadiusKm * 1000,
+        "دقة GPS ضعيفة؛ أعد المحاولة",
+      );
       const near =
         distance(point, o.sender.location) <= data.config.arrivalRadiusKm;
-      must(
-        near,
-        "لم تصل إلى نطاق الاستلام بعد؛ اقترب وحدّث GPS",
-      );
+      must(near, "لم تصل إلى نطاق الاستلام بعد؛ اقترب وحدّث GPS");
       o.arrivedAt = now();
       o.waitAlerted = false;
       o.deadline = null;
@@ -782,10 +876,19 @@ export function createDemoApi(storage = globalThis.localStorage) {
       must(p.reason?.trim(), "وضح مشكلة الطلب قبل استثنائه");
       o.exclusionReason = p.reason.trim().slice(0, 300);
       o.exclusionPending = true;
-      change(o, "draft", "استثنى المندوب الطلب قبل الاستلام: " + o.exclusionReason);
-      o.courier = null; o.courierInfo = null; o.deadline = null; o.publishedAt = null;
-      o.offerRound = (o.offerRound || 0) + 1; o.waitNotified = false;
-      for (const batch of data.batches.filter((b) => b.ids.includes(o.id))) batch.used = true;
+      change(
+        o,
+        "draft",
+        "استثنى المندوب الطلب قبل الاستلام: " + o.exclusionReason,
+      );
+      o.courier = null;
+      o.courierInfo = null;
+      o.deadline = null;
+      o.publishedAt = null;
+      o.offerRound = (o.offerRound || 0) + 1;
+      o.waitNotified = false;
+      for (const batch of data.batches.filter((b) => b.ids.includes(o.id)))
+        batch.used = true;
       return;
     }
     if (a === "pickup") {
@@ -863,11 +966,20 @@ export function createDemoApi(storage = globalThis.localStorage) {
     if (a === "defer") {
       requireState(["received", "transit", "at_customer"]);
       must(!o.partial?.approved, "أكمل الجزء المعتمد قبل التأجيل");
-      must(p.reason?.trim() && Date.parse(p.when) > Date.now(), "حدد سبب التأجيل وموعداً مستقبلياً");
+      must(
+        p.reason?.trim() && Date.parse(p.when) > Date.now(),
+        "حدد سبب التأجيل وموعداً مستقبلياً",
+      );
       o.retryAt = p.when;
       o.retryApproved = false;
       o.deferReason = p.reason.trim().slice(0, 300);
-      change(o, "retry", "تأجيل بطلب الزبون: " + o.deferReason + " — بانتظار موافقة التاجر على الموعد");
+      change(
+        o,
+        "retry",
+        "تأجيل بطلب الزبون: " +
+          o.deferReason +
+          " — بانتظار موافقة التاجر على الموعد",
+      );
       return;
     }
     if (a === "retry") {
@@ -885,8 +997,19 @@ export function createDemoApi(storage = globalThis.localStorage) {
     }
     if (a === "partial_propose") {
       if (p.returnAmount !== undefined || p.returnCount !== undefined) {
-        must(Number(p.returnAmount) > 0 && Number(p.returnAmount) < o.amount && Number.isInteger(Number(p.returnCount)) && Number(p.returnCount) > 0 && Number(p.returnCount) < o.count, "حدد قيمة وعدد القطع المرتجعة ضمن الطلب");
-        p = { ...p, amount: o.amount - Number(p.returnAmount), count: o.count - Number(p.returnCount) };
+        must(
+          Number(p.returnAmount) > 0 &&
+            Number(p.returnAmount) < o.amount &&
+            Number.isInteger(Number(p.returnCount)) &&
+            Number(p.returnCount) > 0 &&
+            Number(p.returnCount) < o.count,
+          "حدد قيمة وعدد القطع المرتجعة ضمن الطلب",
+        );
+        p = {
+          ...p,
+          amount: o.amount - Number(p.returnAmount),
+          count: o.count - Number(p.returnCount),
+        };
       }
       must(data.config.partialEnabled, "التسليم الجزئي غير متاح");
       requireState(["at_customer"]);
@@ -1035,24 +1158,34 @@ export function createDemoApi(storage = globalThis.localStorage) {
     } catch {}
 
     if (url === "/api/login") {
-      must(["merchant", "courier"].includes(p.role), "اختر الحساب");
-      // Public demo credentials select the seeded merchant, never a real account.
+      must(
+        allowedAccounts.includes(p.role),
+        "نوع الحساب غير متاح في هذا التطبيق",
+      );
+      // Public demo credentials select the sample for the chosen account type.
       if (p.phone === "iraq") {
         must(
-          p.role === "merchant" && p.password === "iraq",
+          ["merchant", "free"].includes(p.role) && p.password === "iraq",
           "اسم المستخدم أو كلمة المرور غير صحيحة",
         );
-        const demoMerchant = data.users.find((user) => user.id === "MER-DEMO");
-        must(demoMerchant, "الحساب التجريبي غير متوفر");
-        currentId = demoMerchant.id;
-        data.lastByRole.merchant = demoMerchant.id;
+        const demoAccount = data.users.find(
+          (user) => user.id === (p.role === "free" ? "FREE-DEMO" : "MER-DEMO"),
+        );
+        must(demoAccount, "الحساب التجريبي غير متوفر");
+        currentId = demoAccount.id;
+        data.lastByRole[p.role] = demoAccount.id;
         persist();
-        return { user: copy(demoMerchant) };
+        return { user: copy(demoAccount) };
       }
       const u =
-        data.users.find((u) => u.role === p.role && u.phone === p.phone) ||
-        data.users.find((u) => u.id === data.lastByRole[p.role]) ||
-        data.users.find((u) => u.role === p.role);
+        data.users.find(
+          (u) => accountType(u) === p.role && u.phone === p.phone,
+        ) ||
+        data.users.find(
+          (u) => accountType(u) === p.role && u.id === data.lastByRole[p.role],
+        ) ||
+        data.users.find((u) => accountType(u) === p.role);
+      must(u, "الحساب التجريبي غير متوفر");
       currentId = u.id;
       data.lastByRole[p.role] = u.id;
       persist();
@@ -1063,13 +1196,12 @@ export function createDemoApi(storage = globalThis.localStorage) {
       return { ok: true };
     }
     if (url === "/api/register") {
-      must(
-        ["merchant", "courier"].includes(p.role) && p.name?.trim(),
-        "أكمل البيانات",
-      );
+      must(allowedAccounts.includes(p.role) && p.name?.trim(), "أكمل البيانات");
       must(supportedPhone(p.phone), "الهاتف 11 رقماً ويبدأ بـ077 أو078 أو079");
       must(
-        !data.users.some((u) => u.phone === p.phone && u.role === p.role),
+        !data.users.some(
+          (u) => u.phone === p.phone && accountType(u) === p.role,
+        ),
         "رقم الهاتف مسجل لهذا الدور",
       );
       must(
@@ -1077,10 +1209,12 @@ export function createDemoApi(storage = globalThis.localStorage) {
         "كلمتا المرور غير متطابقتين",
       );
       must(p.activity !== "ecommerce", "التجارة الإلكترونية قريباً");
-      const uid = id(p.role === "merchant" ? "MER" : "COU");
+      const uid = id({ merchant: "MER", free: "FREE", courier: "COU" }[p.role]);
       const { password, confirmPassword, documents, photos, ...v } = p;
       const u = {
         ...v,
+        role: workflowRole(p.role),
+        accountType: p.role,
         id: uid,
         walletId: "W-" + uid,
         approved: true,
@@ -1094,7 +1228,7 @@ export function createDemoApi(storage = globalThis.localStorage) {
         failures: [],
       };
       data.users.push(u);
-      data.lastByRole[u.role] = uid;
+      data.lastByRole[accountType(u)] = uid;
       persist();
       return { user: copy(u) };
     }

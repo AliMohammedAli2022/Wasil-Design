@@ -12,6 +12,7 @@ const { ui, state } = useViewState();
   <template v-if="model.state.authRole"
     ><section class="glass-login" aria-labelledby="login-title">
       <ActionButton
+        v-if="model.application.accounts.length > 1"
         :model="{
           action: 'choose-again',
           extra: '',
@@ -78,16 +79,6 @@ const { ui, state } = useViewState();
             kind: 'auth-text-button',
           }"
           >أنشئ حسابك</ActionButton
-        >
-        <template v-if="model.state.authRole === 'merchant'"
-          ><ActionButton
-            :model="{
-              action: 'register-free',
-              extra: '',
-              kind: 'auth-text-button',
-            }"
-            >توصيل شخصي بدون محل</ActionButton
-          ></template
         >
       </p>
     </section></template

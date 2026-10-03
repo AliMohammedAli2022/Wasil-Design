@@ -7,7 +7,12 @@ import AppNavigation from "../views/shell/AppNavigation.vue";
 import WalletNumberDialog from "../views/shell/WalletNumberDialog.vue";
 import PasswordChangeDialog from "../views/shell/PasswordChangeDialog.vue";
 import NotificationsDialog from "../views/shell/NotificationsDialog.vue";
-import FreeRegistrationDialog from "../views/shell/FreeRegistrationDialog.vue";
+import {
+  accountType,
+  accountNames,
+  currentApplication,
+  workflowRole,
+} from "../services/accounts.js";
 import InstallInstructions from "../views/shell/InstallInstructions.vue";
 import DeviceDraftView from "../views/shell/DeviceDraftView.vue";
 import SplashArtView from "../views/shell/SplashArt.vue";
@@ -35,15 +40,15 @@ import {
   phoneDigits,
   phoneError,
   PHONE_FIELDS,
-  PHONE_ATTRIBUTES,
 } from "../services/formFields.js";
-export function useWasel() {
+export function useWasel(application = currentApplication()) {
   function viewContext() {
     return {
       input,
       money,
       date,
       roleNames,
+      application,
       state,
       refresh,
       courierView,
@@ -138,7 +143,7 @@ export function useWasel() {
     registration: null,
     offline: false,
     trackingId: null,
-    authRole: null,
+    authRole: application.defaultAccount,
   });
   const ui = shallowReactive({
     page: "AuthView",
@@ -222,10 +227,7 @@ export function useWasel() {
         n,
       },
     });
-  const roleNames = {
-    merchant: "التاجر",
-    courier: "المندوب",
-  };
+  const roleNames = accountNames;
   const vehicleNames = {
     motorcycle: "دراجة نارية",
     sedan: "سيارة صالون",
@@ -303,7 +305,7 @@ export function useWasel() {
       } else toast(error.message);
     }
   }
-  const splashKey = "wasel-splash-shown";
+  const splashKey = "wasel-splash-shown-" + application.id;
   function splashSeen() {
     try {
       return sessionStorage.getItem(splashKey) === "1";
@@ -406,7 +408,7 @@ export function useWasel() {
   function render() {
     ui.formError = "";
     if (!state.S) return loginPage();
-    writeRoute(state.S.user.role, state.screen);
+    writeRoute(accountType(state.S.user), state.screen);
     ui.auth = false;
     ui.page =
       {
@@ -593,20 +595,19 @@ export function useWasel() {
           state.trackingId = null;
         }
         await api("/api/logout", {});
-        localStorage.removeItem("wasel-platform-two-role-snapshot");
         state.S = null;
-        state.authRole = null;
+        state.authRole = application.defaultAccount;
         closeModal();
         loginPage();
       } else if (a === "login-page") {
         state.registration = null;
         loginPage();
       } else if (a === "choose-role") {
-        if (!roleNames[b.dataset.role]) return;
+        if (!application.accounts.includes(b.dataset.role)) return;
         state.authRole = b.dataset.role;
         loginPage();
       } else if (a === "choose-again") {
-        state.authRole = null;
+        state.authRole = application.defaultAccount;
         loginPage();
       } else if (a === "nav") {
         if (b.dataset.screen === "new") startOrder();
@@ -898,16 +899,6 @@ export function useWasel() {
             timeout: 15000,
           },
         );
-      } else if (a === "register-free") {
-        modal(
-          "حساب التوصيل الحر",
-          createView(FreeRegistrationDialog, {
-            model: {
-              PHONE_ATTRIBUTES,
-              provinces,
-            },
-          }),
-        );
       } else if (a === "register") {
         state.registration = {
           step: 0,
@@ -948,20 +939,7 @@ export function useWasel() {
           const problem = phoneError(phoneField.value);
           if (problem) throw Error(problem);
         }
-      if (form.id === "free-register-form") {
-        await api("/api/register", {
-          ...f,
-          role: "merchant",
-          activity: "individual",
-          location: {
-            lat: Number(f.lat),
-            lng: Number(f.lng),
-          },
-        });
-        closeModal();
-        await login("merchant", f.phone);
-        startOrder("free");
-      } else if (form.id === "login-form") {
+      if (form.id === "login-form") {
         const identifier = f.identifier.trim();
         if (identifier !== "iraq") {
           const problem = phoneError(identifier);
@@ -1000,7 +978,11 @@ export function useWasel() {
             Object.entries(f).filter(([k, v]) => typeof v === "string"),
           ),
         );
-        if (r.step === 1 && r.role === "merchant" && r.activity === "ecommerce")
+        if (
+          r.step === 1 &&
+          workflowRole(r.role) === "merchant" &&
+          r.activity === "ecommerce"
+        )
           throw Error("تسجيل التجارة الإلكترونية معطل حالياً؛ سيتاح لاحقاً");
         if (r.step === 2) {
           r.location = {
@@ -1598,7 +1580,7 @@ export function useWasel() {
   const title = computed(
     () =>
       ({
-        home: "لوحة " + roleNames[state.S?.user.role],
+        home: "لوحة " + roleNames[accountType(state.S?.user)],
         registry: "سجل الطلبات",
         available: "الطلبات المتاحة",
         wallet: "المحفظة",
@@ -1630,8 +1612,11 @@ export function useWasel() {
     try {
       closeModal();
       cameraDialog()?.close();
-      const route = parseRoute(location.hash);
-      state.authRole = route.role;
+      const route = parseRoute(location.hash, application.accounts);
+      state.authRole = route.role || application.defaultAccount;
+      if (!route.role && location.hash !== routeHash(state.authRole, "login")) {
+        history.replaceState(null, "", routeHash(state.authRole, "login"));
+      }
       if (!route.role || route.page === "login") {
         state.S = null;
         state.registration = null;
@@ -1658,7 +1643,7 @@ export function useWasel() {
         return;
       }
       state.registration = null;
-      if (!state.S || state.S.user.role !== route.role) {
+      if (!state.S || accountType(state.S.user) !== route.role) {
         await api("/api/login", {
           role: route.role,
         });

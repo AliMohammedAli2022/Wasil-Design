@@ -1,4 +1,5 @@
 <script setup>
+import { workflowRole } from "../../services/accounts.js";
 import LocationFields from "../ui/LocationFields.vue";
 
 defineOptions({ inheritAttrs: false });
@@ -10,7 +11,7 @@ defineProps({ model: { type: Object, required: true } });
       loc: model.r.location,
     }"
   />
-  <template v-if="model.r.role === 'merchant'"
+  <template v-if="workflowRole(model.r.role) === 'merchant'"
     ><label
       >صورة المحل من الداخل
       <input type="file" name="inside" accept="image/*" :required="true"

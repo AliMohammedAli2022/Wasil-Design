@@ -1,4 +1,5 @@
 <script setup>
+import { accountType } from "../../services/accounts.js";
 import DetailRow from "../ui/DetailRow.vue";
 import ActionButton from "../ui/ActionButton.vue";
 import AccountLocationForm from "./AccountLocationForm.vue";
@@ -34,7 +35,7 @@ defineProps({ model: { type: Object, required: true } });
   <DetailRow
     :model="{
       label: 'نوع الحساب',
-      value: model.roleNames[model.u.role],
+      value: model.roleNames[accountType(model.u)],
     }"
   />
   <DetailRow

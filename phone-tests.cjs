@@ -96,27 +96,31 @@ test("login allows usernames or phone numbers for both roles", async () => {
     assert.ok(field, "missing login identifier for " + role);
     assert.match(field[0], /type="text"/);
     assert.match(field[0], /autocomplete="username"/);
-    assert.doesNotMatch(field[0], /inputmode="numeric"|pattern=|maxlength="11"/);
+    assert.doesNotMatch(
+      field[0],
+      /inputmode="numeric"|pattern=|maxlength="11"/,
+    );
   }
 });
 
-test("personal delivery registration opens with a valid phone field", async () => {
+test("free account opens the merchant registration wizard with a valid phone field", async () => {
   const { app } = await renderPage(
     "AuthView",
-    (a) => (a.state.authRole = "merchant"),
+    (a) => (a.state.authRole = "free"),
   );
   await app.dispatch("click", {
     target: {
-      closest: () => ({ dataset: { action: "register-free" }, disabled: false }),
+      closest: () => ({ dataset: { action: "register" }, disabled: false }),
     },
   });
-  assert.equal(app.ui.dialogTitle, "حساب التوصيل الحر");
+  assert.equal(app.state.registration.role, "free");
+  assert.equal(app.ui.page, "MerchantRegistration");
   const { renderToString } = await import("vue/server-renderer");
   const { h } = await import("vue");
-  const html = await renderToString(h("div", app.ui.dialogContent));
-  assert.match(html, /id="free-register-form"/);
+  const html = await renderToString(h(app.currentView.value));
+  assert.match(html, /id="register-form"/);
   assertPhoneField(html, "phone");
-  for (const name of ["name", "province", "area", "address"])
+  for (const name of ["name", "password"])
     assert.ok(html.includes(`name="${name}"`), "missing " + name);
 });
 

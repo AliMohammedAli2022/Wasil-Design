@@ -75,6 +75,8 @@ test("auth screens preserve identity and safely escape content", async () => {
   const roles = await renderPage("AuthView");
   assert.match(roles.html, /حيّاك بواصل/);
   assert.match(roles.html, /glass-role merchant/);
+  assert.match(roles.html, /data-role="free"/);
+  assert.doesNotMatch(roles.html, /data-role="courier"/);
   const login = await renderPage("AuthView", (a) => {
     a.state.authRole = "courier";
     a.ui.authError = "<img onerror=alert(1)>";
@@ -355,13 +357,28 @@ test("built PWA caches only public files and supports offline role routes", asyn
   let response;
   handlers.fetch({
     request: {
-      url: "https://wasel.test/courier/",
+      url: "https://wasel.test/merchant/",
       method: "GET",
       mode: "navigate",
     },
     respondWith: (p) => (response = p),
   });
   assert.equal(await (await response).text(), "index.html");
+  response = undefined;
+  handlers.fetch({
+    request: {
+      url: "https://wasel.test/courier/",
+      method: "GET",
+      mode: "navigate",
+    },
+    respondWith: (p) => (response = p),
+  });
+  assert.equal(
+    response,
+    undefined,
+    "parent worker must not serve the courier application",
+  );
+  assert.ok(precache.every((url) => !url.includes("/courier/")));
   response = undefined;
   handlers.fetch({
     request: { url: "https://wasel.test/api/state", method: "GET" },

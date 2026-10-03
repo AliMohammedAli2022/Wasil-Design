@@ -277,8 +277,11 @@ test("demo catalog upgrade preserves edited orders and is not repeated", async (
   const { createDemoApi, DEMO_STORAGE_KEY } =
     await import("./src/services/demoApi.js");
   const data = createDemoData();
-  assert.equal(data.orders.length, 414);
-  assert.equal(data.orders.filter((o) => o.service === "vip").length, 18);
+  const merchantOrders = data.orders.filter(
+    (order) => order.merchant === "MER-DEMO",
+  );
+  assert.equal(merchantOrders.length, 414);
+  assert.equal(merchantOrders.filter((o) => o.service === "vip").length, 18);
   data.orders = data.orders.slice(0, 18);
   delete data.expandedDemoCatalog;
   data.orders[0].recipient.name = "اسم عدله المستخدم";

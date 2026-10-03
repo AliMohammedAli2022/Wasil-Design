@@ -1,7 +1,11 @@
-export function parseRoute(hash) {
+import { workflowRole } from "./accounts.js";
+
+export function parseRoute(
+  hash,
+  allowedAccounts = ["merchant", "free", "courier"],
+) {
   const [role, page] = (hash || "").replace(/^#\/?/, "").split("/");
-  if (!["merchant", "courier"].includes(role))
-    return { role: null, page: "choose" };
+  if (!allowedAccounts.includes(role)) return { role: null, page: "choose" };
   const pages = [
     "login",
     "register",
@@ -9,7 +13,7 @@ export function parseRoute(hash) {
     "registry",
     "wallet",
     "account",
-    ...(role === "merchant" ? ["new", "draft"] : ["available"]),
+    ...(workflowRole(role) === "merchant" ? ["new", "draft"] : ["available"]),
   ];
   return { role, page: pages.includes(page) ? page : "home" };
 }
