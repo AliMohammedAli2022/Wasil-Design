@@ -1,7 +1,11 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { api } from "../services/api.js";
-const props = defineProps({ orders: Array, visibleOrders: Array, action: String });
+const props = defineProps({
+  orders: Array,
+  visibleOrders: Array,
+  action: String,
+});
 const emit = defineEmits(["published"]);
 const selected = ref([]),
   busy = ref(false),
@@ -11,7 +15,9 @@ const all = computed(
     props.orders.length > 0 && selected.value.length === props.orders.length,
 );
 function toggle(id, checked) {
-  selected.value = checked ? [...new Set([...selected.value, id])] : selected.value.filter(x => x !== id);
+  selected.value = checked
+    ? [...new Set([...selected.value, id])]
+    : selected.value.filter((x) => x !== id);
 }
 watch(
   () => props.orders.map((o) => o.id).join(","),
@@ -43,8 +49,8 @@ async function publish() {
 }
 </script>
 <template>
-  <section class="draft-bulk">
-    <div class="draft-bulk-actions">
+  <section class="order-bulk">
+    <div class="order-bulk-actions">
       <label
         ><input
           type="checkbox"
@@ -72,12 +78,17 @@ async function publish() {
     <p v-if="message" role="status">{{ message }}</p>
     <p v-if="!orders.length" class="muted">لا توجد طلبات بهذه الحالة.</p>
     <template v-for="order in visibleOrders" :key="order.id">
-      <slot :order="order" :checked="selected.includes(order.id)" :busy="busy" :toggle="toggle" />
+      <slot
+        :order="order"
+        :checked="selected.includes(order.id)"
+        :busy="busy"
+        :toggle="toggle"
+      />
     </template>
   </section>
 </template>
 <style scoped>
-.draft-bulk-actions {
+.order-bulk-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -94,7 +105,7 @@ label {
   gap: 8px;
   min-height: 44px;
 }
-.draft-order-select {
+.bulk-order-select {
   padding: 6px 12px;
 }
 input {

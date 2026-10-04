@@ -8,12 +8,9 @@ const props = defineProps({ model: { type: Object, required: true } });
 const sections = [
   { title: "معلومات الحساب", icon: "person", component: AccountDetails },
   { title: "التقييمات", icon: "star", component: AccountRatings },
-  { title: "المسودات", icon: "draft" },
 ];
 function open(section) {
-  const content = section.component
-    ? createView(section.component, { model: props.model })
-    : props.model.drafts;
+  const content = createView(section.component, { model: props.model });
   props.model.modal(
     section.title,
     createView(AccountPanel, { model: { content } }),

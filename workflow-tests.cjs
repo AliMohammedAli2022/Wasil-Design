@@ -518,7 +518,7 @@ test("separate local tabs observe latest state without overwriting other role ac
   await t.act(o, "edit", { amount: 40000 });
   assert.equal((await courier("/api/state")).orders[0].amount, 40000);
 });
-test("offline hides available orders but keeps assigned records and draft creation", async () => {
+test("offline preserves assigned records but prevents saving, publishing and editing", async () => {
   const t = await setup(),
     o = await t.create(),
     other = await t.create();
@@ -541,9 +541,9 @@ test("offline hides available orders but keeps assigned records and draft creati
     );
     await assert.rejects(t.act(o, "arrive"), /اتصال/);
     await t.login("merchant");
-    await assert.rejects(t.create(), /انقطاع/);
-    const draft = await t.create({ publish: false });
-    assert.equal(draft.status, "draft");
+    await assert.rejects(t.create(), /اتصل/);
+    await assert.rejects(t.create({ publish: false }), /اتصل/);
+    await assert.rejects(t.act(other, "edit", { amount: 123 }), /اتصال/);
   } finally {
     if (previous) Object.defineProperty(globalThis, "navigator", previous);
     else delete globalThis.navigator;
@@ -625,23 +625,6 @@ test("merchant cancellation stops after physical pickup and draft publication is
   assert.equal((await t.state()).orders.find(x => x.id === o.id).status, 'draft');
 });
 
-test("sample device drafts seed once, preserve existing drafts and can save or publish", async () => {
-  const { readDeviceDrafts } = await import('./src/services/sampleDrafts.js');
-  const t = await setup();
-  const values = new Map([['wasel-offline-MER-DEMO', JSON.stringify([{ recipient: { name: 'existing' } }])]]);
-  const storage = { getItem: k => values.get(k), setItem: (k,v) => values.set(k,v) };
-  const user = { id: 'MER-DEMO' };
-  const drafts = readDeviceDrafts(user, storage);
-  assert.equal(drafts.length, 11);
-  assert.equal(drafts[0].recipient.name, 'existing');
-  for (const [i,draft] of drafts.slice(1).entries()) {
-    const saved = await t.api('/api/orders', { ...draft, publish: i % 2 === 0 });
-    assert.equal(saved.status, i % 2 === 0 ? 'published' : 'draft');
-  }
-  storage.setItem('wasel-offline-MER-DEMO', '[]');
-  assert.equal(readDeviceDrafts(user, storage).length, 0);
-  assert.equal(readDeviceDrafts({id:'MER-OTHER'}, storage).length, 0);
-});
 
 test("only the assigned courier can finish a settled order and completion is final", async () => {
   for (const role of ["merchant", "free"]) {

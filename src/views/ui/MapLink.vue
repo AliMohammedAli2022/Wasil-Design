@@ -1,25 +1,13 @@
 <script setup>
-import MaterialIcon from "../shell/MaterialIcon.vue";
-
+import MapAppPicker from "../../components/MapAppPicker.vue";
 defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
 </script>
 <template>
-  <template v-if="model.loc"
-    ><a
-      target="_blank"
-      rel="noopener noreferrer"
-      :href="
-        'https://www.google.com/maps/search/?api=1&amp;query=' +
-        encodeURIComponent(model.loc.lat + ',' + model.loc.lng)
-      "
-      ><MaterialIcon
-        :model="{
-          n: 'location_on',
-        }"
-      />
-      {{ " " }}
-      {{ model.label }}</a
-    ></template
-  >
+  <MapAppPicker
+    v-if="model.loc"
+    :location="model.loc"
+    :name="model.label"
+    :label="model.label"
+  />
 </template>

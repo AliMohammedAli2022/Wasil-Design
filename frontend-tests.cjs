@@ -331,18 +331,16 @@ test("merchant and courier account sections open independent dialogs", async () 
       vehicleNames: {},
       money: String,
       fallback: (items, empty) => (items.length ? items : empty),
-      offlineDraftsView: () => null,
       modal: (title, content) => {
         opened = { title, content };
       },
     };
     const view = mountView(createAccountViews(() => context).accountView());
     const buttons = view.findAll((node) => node.tag === "button");
-    assert.equal(buttons.length, 3);
+    assert.equal(buttons.length, 2);
     for (const [index, title] of [
       "معلومات الحساب",
       "التقييمات",
-      "المسودات",
     ].entries()) {
       const trigger = buttons[index];
       assert.equal(trigger.tag, "button");

@@ -53,7 +53,7 @@ async function renderPage(page, configure = () => {}) {
   );
   return { html, app };
 }
-test("account drafts open order details with English history dates", async () => {
+test("account orders open details with English history dates", async () => {
   const { renderToString } = await import("vue/server-renderer");
   const { h } = await import("vue");
   const { app } = await renderPage("AccountView");
@@ -514,10 +514,10 @@ test("registry progressively renders twenty cards including selectable draft and
   }
 });
 
-test("offline publish request remains in device drafts without creating a published order", async () => {
+test("offline publishing keeps the form in memory and creates no device draft", async () => {
   const { app } = await renderPage("AccountView");
   const key = "wasel-offline-" + app.state.S.user.id;
-  localStorage.setItem(key, "[]");
+  storage.delete(key);
   app.state.offline = true;
   app.state.wizard = {
     data: { recipient: { name: "Offline recipient" }, kind: "merchant" },
@@ -527,39 +527,7 @@ test("offline publish request remains in device drafts without creating a publis
     disabled: false,
   };
   await app.dispatch("click", { target: { closest: () => button } });
-  const drafts = JSON.parse(localStorage.getItem(key));
-  assert.equal(drafts.length, 1);
-  assert.equal(drafts[0].publish, false);
-  assert.equal(app.state.wizard, null);
-  assert.match(app.ui.toast, /الجهاز/);
-});
-
-test("device draft opens a dedicated page using its stable id", async () => {
-  const { readDeviceDrafts } = await import("./src/services/sampleDrafts.js");
-  const { app } = await renderPage("AccountView");
-  const key = "wasel-offline-" + app.state.S.user.id;
-  localStorage.setItem(
-    key,
-    JSON.stringify([
-      { recipient: { name: "Draft page recipient" }, amount: 1000 },
-    ]),
-  );
-  const first = readDeviceDrafts(app.state.S.user)[0];
-  assert.ok(first.localDraftId);
-  assert.equal(
-    readDeviceDrafts(app.state.S.user)[0].localDraftId,
-    first.localDraftId,
-  );
-  const button = {
-    dataset: { action: "view-local-draft", draftId: first.localDraftId },
-  };
-  await app.dispatch("click", { target: { closest: () => button } });
-  assert.equal(app.state.screen, "draft");
-  assert.equal(app.ui.page, "DeviceDraftView");
-  const { h } = await import("vue");
-  const { renderToString } = await import("vue/server-renderer");
-  const html = await renderToString(h(app.currentView.value));
-  assert.match(html, /Draft page recipient/);
-  assert.match(html, /نشر الطلب/);
-  assert.match(html, /حذف المسودة/);
+  assert.equal(localStorage.getItem(key), null);
+  assert.equal(app.state.wizard.data.recipient.name, "Offline recipient");
+  assert.match(app.ui.toast, /اتصل بالإنترنت/);
 });

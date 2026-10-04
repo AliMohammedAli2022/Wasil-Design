@@ -125,7 +125,7 @@ export function createOrdersViews(context) {
     const { baseOrders, state, statusPicker, orderList, refresh } = context();
     const os = filterOrders(baseOrders(), state);
     const registry = state.screen === "registry";
-    const bulkDrafts =
+    const bulkActions =
       registry &&
       state.S.user.role === "merchant" &&
       ["draft", "published"].includes(state.filter);
@@ -135,7 +135,7 @@ export function createOrdersViews(context) {
         statusPicker,
         registry,
         os,
-        bulkDrafts,
+        bulkActions,
         refresh,
         orderList,
       },
@@ -173,7 +173,7 @@ export function createOrdersViews(context) {
         add("edit", "تعديل الطلب");
         if (o.status === "draft") {
           add("publish", "نشر الطلب");
-          add("delete", "حذف المسودة");
+          add("delete", "حذف الطلب المحفوظ");
         } else {
           if (o.status === "published") {
             add("unpublish", "إلغاء النشر");
@@ -398,7 +398,7 @@ export function createOrdersViews(context) {
       });
     const contents = {
       publish: "سيظهر الطلب للمندوبين المناسبين في النظام المحلي.",
-      unpublish: "سيعود الطلب إلى المسودات ولن يظهر للمندوبين.",
+      unpublish: "سيعود الطلب إلى حالة محفوظ ولن يظهر للمندوبين.",
       delete: "سيُحذف الطلب المحفوظ. الطلب المنشور لا يمكن حذفه بهذه الطريقة.",
       cancel: "يُلغى الطلب قبل استلام الشحنة.",
       reserve: "يُحجز الطلب لك وحدك. لا يمكنك حجز طلب ثانٍ حتى استلامه.",

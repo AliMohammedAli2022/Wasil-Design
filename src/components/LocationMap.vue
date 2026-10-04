@@ -17,11 +17,10 @@ onMounted(async () => {
       touchZoom: true,
       dragging: true,
       doubleClickZoom: true,
+      attributionControl: false,
     }).setView([33.3, 44.43], 12);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     })
       .on("tileerror", () => (failed.value = true))
       .addTo(map);
@@ -208,8 +207,61 @@ onBeforeUnmount(() => {
       role="region"
       aria-label="خريطة مواقع الطلبات"
     ></div>
+    <p class="map-attribution" dir="ltr">
+      ©
+      <a
+        href="https://www.openstreetmap.org/copyright"
+        target="_blank"
+        rel="noopener noreferrer"
+        >OpenStreetMap contributors</a
+      >
+    </p>
     <p v-if="failed" class="file-help">
       تعذر تحميل بعض تفاصيل الخريطة. تبقى قائمة المواقع والاتجاهات متاحة.
     </p>
   </div>
 </template>
+<style scoped>
+.map-attribution {
+  margin: 4px 0 0;
+  font:
+    10px/1.5 Arial,
+    sans-serif;
+  color: #526578;
+  text-align: end;
+}
+.map-attribution a {
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font: inherit !important;
+  text-decoration: underline;
+  display: inline !important;
+}
+.geographic-map :deep(.leaflet-control-zoom a) {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  min-width: 34px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+  text-indent: 0;
+}
+.geographic-map :deep(.leaflet-control-zoom a span) {
+  display: block;
+  font:
+    26px/1 Arial,
+    sans-serif;
+  width: 100%;
+  text-align: center;
+}
+:global(html[data-theme="dark"] .map-attribution) {
+  color: #b4cad5;
+}
+</style>

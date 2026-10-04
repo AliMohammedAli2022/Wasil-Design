@@ -3,6 +3,7 @@ import {
   statusLabel,
   workflowEventLabels,
 } from "./orderStatuses.js";
+import { removeDeviceDraftStorage } from "./storageMigrations.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
@@ -40,6 +41,7 @@ export function createDemoApi(
   storage = globalThis.localStorage,
   allowedAccounts = ["merchant", "free", "courier"],
 ) {
+  removeDeviceDraftStorage(storage);
   let data = createDemoData(),
     currentId = null;
   try {
@@ -1581,7 +1583,7 @@ export function createDemoApi(
     }
     if (url === "/api/orders") {
       must(u.role === "merchant", "للتاجر فقط");
-      must(!p.publish || online(), "احفظ مسودة أثناء انقطاع الإنترنت");
+      must(online(), "اتصل بالإنترنت لحفظ أو نشر الطلب");
       validateOrder(p);
       const o = {
         ...copy(p),
@@ -1623,7 +1625,7 @@ export function createDemoApi(
       must(o, "الطلب غير موجود");
       must(canView(u, o), "الطلب غير متاح لهذا الحساب");
       must(
-        online() || (p.action === "edit" && o.status === "draft"),
+        online(),
         "هذا الإجراء يحتاج اتصالاً؛ البيانات المحفوظة متاحة للقراءة",
       );
       act(o, p);

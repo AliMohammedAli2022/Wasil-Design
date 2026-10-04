@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import LocationMap from "./LocationMap.vue";
 import LocationShare from "./LocationShare.vue";
+import MapAppPicker from "./MapAppPicker.vue";
 import { nearestArea } from "../services/orderPolicy.js";
 const props = defineProps({
   location: Object,
@@ -22,11 +23,6 @@ watch(
     point.value = value || null;
   },
   { deep: true },
-);
-const url = computed(() =>
-  point.value
-    ? `https://www.google.com/maps/search/?api=1&query=${point.value.lat},${point.value.lng}`
-    : "",
 );
 function choose(value) {
   point.value = value;
@@ -100,13 +96,11 @@ function gps() {
       </p>
     </template>
     <div class="location-panel-actions">
-      <a
+      <MapAppPicker
         v-if="point && showExternalActions"
-        :href="url"
-        target="_blank"
-        rel="noopener noreferrer"
-        >فتح الخريطة</a
-      >
+        :location="point"
+        :name="name"
+      />
       <LocationShare
         v-if="point && showExternalActions"
         :location="point"

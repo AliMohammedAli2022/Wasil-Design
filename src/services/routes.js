@@ -14,7 +14,7 @@ export function parseRoute(
     "registry",
     "wallet",
     "account",
-    ...(workflowRole(role) === "merchant" ? ["new", "draft"] : ["available"]),
+    ...(workflowRole(role) === "merchant" ? ["new"] : ["available"]),
   ];
   return { role, page: pages.includes(page) ? page : "home" };
 }

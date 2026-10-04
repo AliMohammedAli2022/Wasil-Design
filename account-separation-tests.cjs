@@ -69,30 +69,6 @@ test("free account copies merchant features with independent orders, balances, c
   );
 });
 
-test("merchant and free sample device drafts are independent and seed once", async () => {
-  const { storage } = await workspace();
-  const { createDemoData } = await import("./src/services/demoData.js");
-  const { readDeviceDrafts } = await import("./src/services/sampleDrafts.js");
-  const users = createDemoData().users;
-  const merchant = users.find((user) => user.id === "MER-DEMO");
-  const free = users.find((user) => user.id === "FREE-DEMO");
-  const merchantDrafts = readDeviceDrafts(merchant, storage);
-  const freeDrafts = readDeviceDrafts(free, storage);
-  assert.equal(freeDrafts.length, merchantDrafts.length);
-  assert.ok(freeDrafts.length > 0);
-  assert.ok(
-    freeDrafts.every(
-      (draft) =>
-        draft.sender.id === free.id &&
-        !merchantDrafts.some(
-          (other) => other.localDraftId === draft.localDraftId,
-        ),
-    ),
-  );
-  storage.setItem("wasel-offline-FREE-DEMO", "[]");
-  assert.deepEqual(readDeviceDrafts(free, storage), []);
-  assert.deepEqual(readDeviceDrafts(merchant, storage), merchantDrafts);
-});
 
 test("same phone can register separate merchant and free identities and cannot cross application entry points", async () => {
   const { storage, createDemoApi } = await workspace();
@@ -170,7 +146,6 @@ test("free routes use merchant pages and each application rejects the other acco
     "home",
     "registry",
     "new",
-    "draft",
     "wallet",
     "account",
   ]) {

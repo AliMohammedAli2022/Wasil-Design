@@ -2,7 +2,7 @@
 import ActionButton from "../ui/ActionButton.vue";
 import MaterialIcon from "../shell/MaterialIcon.vue";
 import ProgressiveOrders from "../../components/ProgressiveOrders.vue";
-import DraftOrders from "../../components/DraftOrders.vue";
+import BulkOrderActions from "../../components/BulkOrderActions.vue";
 import ViewContent from "../../components/ViewContent.vue";
 defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
@@ -45,8 +45,8 @@ defineProps({ model: { type: Object, required: true } });
       :key="model.state.filter + ':' + model.state.query"
       :orders="model.os"
       ><template #default="{ visible }"
-        ><template v-if="model.bulkDrafts"
-          ><DraftOrders
+        ><template v-if="model.bulkActions"
+          ><BulkOrderActions
             :key="model.state.filter"
             :orders="model.os"
             :visibleOrders="visible"
@@ -60,7 +60,7 @@ defineProps({ model: { type: Object, required: true } });
                     busy,
                     toggle,
                   })
-                " /></template></DraftOrders
+                " /></template></BulkOrderActions
         ></template>
         <template v-else
           ><ViewContent

@@ -14,7 +14,6 @@ import {
   workflowRole,
 } from "../services/accounts.js";
 import InstallInstructions from "../views/shell/InstallInstructions.vue";
-import DeviceDraftView from "../views/shell/DeviceDraftView.vue";
 import SplashArtView from "../views/shell/SplashArt.vue";
 import {
   recommendVehicle,
@@ -69,9 +68,7 @@ export function useWasel(application = currentApplication()) {
       availableActions,
       startOrder,
       mapPlot,
-      offlineDraftsView,
       ledger,
-      readDrafts,
       cameraDialog,
       documentCapture,
       ui,
@@ -109,14 +106,8 @@ export function useWasel(application = currentApplication()) {
     mapPlot,
     localMap,
   } = createOrdersViews(viewContext);
-  const {
-    accountView,
-    walletView,
-    offlineDraftsView,
-    readDrafts,
-    readiness,
-    profileForm,
-  } = createAccountViews(viewContext);
+  const { accountView, walletView, readiness, profileForm } =
+    createAccountViews(viewContext);
   const { drawDocumentCamera, reviewCourierRegistration } =
     createCameraViews(viewContext);
   const cleanups = [];
@@ -441,7 +432,6 @@ export function useWasel(application = currentApplication()) {
         available: "OrdersView",
         wallet: "WalletView",
         account: "AccountView",
-        draft: "DeviceDraftView",
         new: "OrderWizard",
       }[state.screen] || "HomeView";
     ui.revision++;
@@ -745,73 +735,20 @@ export function useWasel(application = currentApplication()) {
           ...state.wizard.data,
           publish: b.dataset.publish === "true",
         };
-        if (state.offline || navigator.onLine === false) {
-          if (state.wizard.id)
-            throw Error(
-              "تعديل طلب موجود يحتاج اتصالاً؛ بياناتك باقية في النموذج",
-            );
-          const drafts = readDrafts();
-          drafts.push({
+        if (state.offline || navigator.onLine === false)
+          throw Error(
+            "اتصل بالإنترنت لحفظ أو نشر الطلب؛ بياناتك باقية في النموذج",
+          );
+        if (state.wizard.id)
+          await api(`/api/orders/${state.wizard.id}/action`, {
             ...data,
-            publish: false,
+            action: "edit",
           });
-          localStorage.setItem(
-            "wasel-offline-" + state.S.user.id,
-            JSON.stringify(drafts),
-          );
-          state.screen = "account";
-          state.wizard = null;
-          render();
-          toast("حُفظت المسودة على هذا الجهاز");
-        } else {
-          if (state.wizard.id)
-            await api(`/api/orders/${state.wizard.id}/action`, {
-              ...data,
-              action: "edit",
-            });
-          else await api("/api/orders", data);
-          state.wizard = null;
-          state.screen = "registry";
-          await refresh();
-          toast("تم حفظ الطلب");
-        }
-      } else if (a === "view-local-draft") {
-        state.localDraftId = b.dataset.draftId;
-        state.screen = "draft";
-        closeModal();
-        render();
-        window.scrollTo(0, 0);
-      } else if (a === "sync-draft" || a === "delete-local-draft") {
-        if (state.draftBusy) return;
-        const drafts = readDrafts();
-        const index = Number(b.dataset.index);
-        if (!Number.isInteger(index) || !drafts[index]) return;
-        if (a === "sync-draft" && (state.offline || navigator.onLine === false))
-          throw Error("اتصل بالإنترنت لحفظ أو نشر المسودة");
-        state.draftBusy = true;
-        try {
-          if (a === "sync-draft")
-            await api("/api/orders", {
-              ...drafts[index],
-              publish: b.dataset.publish === "true",
-            });
-          drafts.splice(index, 1);
-          localStorage.setItem(
-            "wasel-offline-" + state.S.user.id,
-            JSON.stringify(drafts),
-          );
-          await refresh();
-          modal("المسودات", [offlineDraftsView()]);
-          toast(
-            a === "delete-local-draft"
-              ? "تم حذف المسودة"
-              : b.dataset.publish === "true"
-                ? "تم نشر الطلب"
-                : "تم حفظ الطلب",
-          );
-        } finally {
-          state.draftBusy = false;
-        }
+        else await api("/api/orders", data);
+        state.wizard = null;
+        state.screen = "registry";
+        await refresh();
+        toast(data.publish ? "تم نشر الطلب" : "تم حفظ الطلب");
       } else if (a === "refresh-chat") {
         await refresh(false);
         orderActionForm(
@@ -1561,17 +1498,6 @@ export function useWasel(application = currentApplication()) {
     OrdersView: ordersView,
     OrderWizard: orderWizard,
     AccountView: accountView,
-    DeviceDraftView: () =>
-      createView(DeviceDraftView, {
-        model: {
-          state,
-          render,
-          modal,
-          offlineDraftsView,
-          refresh,
-          toast,
-        },
-      }),
     WalletView: walletView,
     MerchantRegistration: merchantRegistrationView,
     CourierRegistration: courierView,
@@ -1623,11 +1549,7 @@ export function useWasel(application = currentApplication()) {
   let restoringRoute = false;
   function writeRoute(role, page) {
     if (restoringRoute) return;
-    const hash =
-      routeHash(role, page) +
-      (page === "draft" && state.localDraftId
-        ? "/" + encodeURIComponent(state.localDraftId)
-        : "");
+    const hash = routeHash(role, page);
     if (location.hash !== hash) history.pushState(null, "", hash);
   }
   async function restoreRoute() {
@@ -1672,10 +1594,6 @@ export function useWasel(application = currentApplication()) {
         await refresh(false);
       }
       state.screen = route.page;
-      if (route.page === "draft")
-        state.localDraftId = decodeURIComponent(
-          location.hash.split("/")[3] || "",
-        );
       state.filter = "all";
       state.homePage = 1;
       state.registryPage = 1;
