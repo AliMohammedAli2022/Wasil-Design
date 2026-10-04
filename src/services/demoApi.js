@@ -1260,7 +1260,7 @@ export function createDemoApi(
         workflowRole(p.role) === "merchant"
           ? verifyDemoRegistrationCode(p.verificationCode)
           : null;
-      if (workflowRole(p.role) === "merchant")
+      if (p.role === "merchant")
         must(p.businessName?.trim(), "أدخل اسم النشاط التجاري");
       const uid = id({ merchant: "MER", free: "FREE", courier: "COU" }[p.role]);
       const {

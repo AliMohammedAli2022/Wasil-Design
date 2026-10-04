@@ -190,12 +190,16 @@ export function useWasel(application = currentApplication()) {
     state.registration = {
       step: 0,
       role,
-      activity: "shop",
-      vehicle: "sedan",
       province: "بغداد",
-      photos: [],
-      documents: {},
-      location: { lat: 33.3, lng: 44.43 },
+      ...(role === "free"
+        ? { location: null }
+        : {
+            activity: "shop",
+            vehicle: "sedan",
+            photos: [],
+            documents: {},
+            location: { lat: 33.3, lng: 44.43 },
+          }),
     };
     registrationView();
   }
@@ -851,7 +855,8 @@ export function useWasel(application = currentApplication()) {
           state.authRole || application.defaultAccount || "merchant",
         );
       } else if (a === "register-back") {
-        state.registration.step--;
+        state.registration.step =
+          state.registration.role === "free" ? 0 : state.registration.step - 1;
         registrationView();
       } else if (a === "install") {
         await requestAppInstall(b);
@@ -909,14 +914,29 @@ export function useWasel(application = currentApplication()) {
         window.scrollTo(0, 0);
       } else if (form.id === "register-form") {
         const r = state.registration;
-        Object.assign(
-          r,
-          Object.fromEntries(
-            Object.entries(f).filter(
-              ([k, v]) => typeof v === "string" && k !== "verificationCode",
+        if (r.role === "free" && r.step === 0) {
+          const location = addressLocation(f.latitude, f.longitude);
+          if (!location)
+            throw Error("حدد الموقع على الخارطة أو أدخل إحداثيات صحيحة");
+          for (const key of [
+            "name",
+            "phone",
+            "password",
+            "province",
+            "area",
+            "address",
+          ])
+            r[key] = key === "password" ? f[key] : f[key]?.trim();
+          r.location = location;
+        } else if (r.role !== "free")
+          Object.assign(
+            r,
+            Object.fromEntries(
+              Object.entries(f).filter(
+                ([k, v]) => typeof v === "string" && k !== "verificationCode",
+              ),
             ),
-          ),
-        );
+          );
         if (r.step === 1) {
           r.businessName = r.businessName?.trim();
           if (!r.businessName) throw Error("أدخل اسم النشاط التجاري");
@@ -943,7 +963,7 @@ export function useWasel(application = currentApplication()) {
           toast("تم إنشاء الحساب");
           state.registration = null;
         } else {
-          r.step++;
+          r.step = r.role === "free" ? 4 : r.step + 1;
           registrationView();
         }
       } else if (form.id === "action-form") {

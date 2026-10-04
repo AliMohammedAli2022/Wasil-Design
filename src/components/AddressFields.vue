@@ -9,6 +9,7 @@ const props = defineProps({
   form: { type: Object, required: true },
   defaultProvince: String,
   requiredLocation: Boolean,
+  showName: { type: Boolean, default: true },
   names: {
     type: Object,
     default: () => ({
@@ -30,7 +31,7 @@ const location = computed(() =>
 );
 </script>
 <template>
-  <label
+  <label v-if="showName"
     >اسم العنوان<input
       v-model.trim="form.name"
       :name="names.name"

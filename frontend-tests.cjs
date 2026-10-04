@@ -408,10 +408,15 @@ test("merchant and free registration require the demo code before creating an ac
     const registration = {
       role,
       name: "علي محمد كريم",
-      businessName: "متجر الأناقة",
+      ...(role === "merchant"
+        ? { businessName: "متجر الأناقة", activity: "shop" }
+        : {}),
       phone: "07912345678",
       password: "private-password",
-      activity: "shop",
+      province: "بغداد",
+      area: "الكرادة",
+      address: "شارع الصناعة قرب الجامعة التكنولوجية",
+      location: { lat: 33.31, lng: 44.45 },
     };
     for (const verificationCode of [
       undefined,
@@ -428,20 +433,25 @@ test("merchant and free registration require the demo code before creating an ac
       );
       assert.equal(storage.getItem(key), before);
     }
-    await assert.rejects(
-      api("/api/register", {
-        ...registration,
-        businessName: " ",
-        verificationCode: "111111",
-      }),
-      /اسم النشاط التجاري/,
-    );
+    if (role === "merchant")
+      await assert.rejects(
+        api("/api/register", {
+          ...registration,
+          businessName: " ",
+          verificationCode: "111111",
+        }),
+        /اسم النشاط التجاري/,
+      );
     const { user } = await api("/api/register", {
       ...registration,
       verificationCode: "111111",
     });
     assert.equal(user.name, registration.name);
     assert.equal(user.businessName, registration.businessName);
+    assert.equal(user.province, registration.province);
+    assert.equal(user.area, registration.area);
+    assert.equal(user.address, registration.address);
+    assert.deepEqual(user.location, registration.location);
     assert.equal(user.registrationVerification.method, "demo");
     assert.ok(
       Number.isFinite(Date.parse(user.registrationVerification.verifiedAt)),

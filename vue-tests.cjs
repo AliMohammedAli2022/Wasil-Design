@@ -290,6 +290,52 @@ test("saved pickup and recipient choices fill editable locations and preserve no
   assert.deepEqual(app.state.wizard.data.recipient, {});
 });
 
+test("free registration combines personal details and address before verification", async () => {
+  const registration = {
+    step: 0,
+    role: "free",
+    province: "بغداد",
+    location: null,
+  };
+  const { html, app } = await renderPage("MerchantRegistration", (a) => {
+    a.state.registration = registration;
+  });
+  const fields = [
+    "name",
+    "phone",
+    "password",
+    "province",
+    "area",
+    "address",
+    "latitude",
+    "longitude",
+  ];
+  let previous = -1;
+  for (const field of fields) {
+    const position = html.indexOf(`name="${field}"`);
+    assert.ok(position > previous, `${field} must follow the previous field`);
+    previous = position;
+  }
+  assert.match(html, /إنشاء حساب توصيل حر/);
+  assert.match(html, /تحديد موقعي الحالي/);
+  assert.match(html, /location-validation/);
+  assert.doesNotMatch(
+    html,
+    /wizard-steps|name="(?:addressName|businessName|activity|inside|outside|verificationCode)"/,
+  );
+
+  const verification = await renderPage("MerchantRegistration", (a) => {
+    a.state.registration = { ...registration, step: 4, phone: "07912345678" };
+  });
+  assert.match(verification.html, /name="verificationCode"/);
+  assert.doesNotMatch(verification.html, /name="password"|wizard-steps/);
+  app.state.registration.step = 4;
+  await app.dispatch("click", {
+    target: { closest: () => ({ dataset: { action: "register-back" } }) },
+  });
+  assert.equal(app.state.registration.step, 0);
+});
+
 test("registration separates identity and business, simplifies location and includes verification", async () => {
   for (let step = 0; step < 5; step++) {
     const { html } = await renderPage(

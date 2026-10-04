@@ -5,6 +5,7 @@ import MerchantIdentityFields from "./MerchantIdentityFields.vue";
 import MerchantLocationFields from "./MerchantLocationFields.vue";
 import MerchantReviewFields from "./MerchantReviewFields.vue";
 import MerchantRegistration from "./MerchantRegistration.vue";
+import FreeRegistration from "./FreeRegistration.vue";
 import CourierField from "./CourierField.vue";
 import CourierPasswordField from "./CourierPasswordField.vue";
 import DocumentField from "./DocumentField.vue";
@@ -33,6 +34,8 @@ export function createAuthViews(context) {
     } = context();
     if (state.registration.role === "courier") return courierView();
     const r = state.registration;
+    if (r.role === "free")
+      return createView(FreeRegistration, { model: { r } });
     let fields = "";
     if (r.step === 0)
       fields = createView(MerchantIdentityFields, {
