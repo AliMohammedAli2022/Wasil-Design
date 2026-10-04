@@ -1337,8 +1337,10 @@ export function createDemoApi(
           must(
             p.location &&
               Number.isFinite(p.location.lat) &&
-              Number.isFinite(p.location.lng),
-            "حدد موقع عنوان الاستلام",
+              Number.isFinite(p.location.lng) &&
+              Math.abs(p.location.lat) <= 90 &&
+              Math.abs(p.location.lng) <= 180,
+            "حدد موقع عنوان الاستلام بإحداثيات صحيحة",
           );
         const v = { ...p, id: p.id || id(key === "addresses" ? "ADR" : "CUS") };
         delete v.action;

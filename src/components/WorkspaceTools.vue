@@ -1,4 +1,5 @@
 <script setup>
+import AddressBook from "./AddressBook.vue";
 import CloseIcon from "./CloseIcon.vue";
 import { ref, reactive, computed, onMounted, nextTick } from "vue";
 import LocationMap from "./LocationMap.vue";
@@ -18,6 +19,7 @@ const panel = ref(),
   busy = ref(false),
   admin = ref(null);
 const form = reactive({});
+const addressBookSession = ref(0);
 const adminPage = ref("");
 const outletPickerOpen = ref(false);
 const outletPickerButton = ref(null);
@@ -157,6 +159,7 @@ function reset() {
   message.value = "";
 }
 async function open(p) {
+  if (p === "addresses") addressBookSession.value++;
   if (p === "outlets")
     searchLocation.value = {
       ...(u.value.location || { lat: 33.3, lng: 44.43 }),
@@ -216,8 +219,8 @@ async function gps() {
 }
 async function save() {
   await run(async () => {
-    if (["addresses", "customers"].includes(page.value)) {
-      await api("/api/" + page.value, {
+    if (page.value === "customers") {
+      await api("/api/customers", {
         ...form,
         province: form.province || u.value.province,
         location: location(),
@@ -358,7 +361,13 @@ const settingsLabels = {
     </div>
     <p v-if="error" role="alert" class="inline-error">{{ error }}</p>
     <p v-if="message" role="status" class="status-note">{{ message }}</p>
-    <template v-if="['addresses', 'customers'].includes(page)">
+    <AddressBook
+      v-if="page === 'addresses'"
+      :key="addressBookSession"
+      :user="u"
+      @refresh="emit('refresh')"
+    />
+    <template v-if="page === 'customers'">
       <label
         >بحث بالاسم أو الهاتف أو العنوان<input v-model="query" type="search"
       /></label>
@@ -382,14 +391,14 @@ const settingsLabels = {
       <form @submit.prevent="save" class="form-stack">
         <h3>
           {{ form.id ? "تعديل" : "إضافة" }}
-          {{ page === "addresses" ? "عنوان" : "مستلم" }}
+          مستلم
         </h3>
         <label
           >الاسم<input
             v-model.trim="form.name"
             required
             maxlength="80" /></label
-        ><label v-if="page === 'customers'"
+        ><label
           >الهاتف<input
             v-model="form.phone"
             @input="form.phone = phoneDigits($event.target.value)"
@@ -421,7 +430,6 @@ const settingsLabels = {
         /></label>
         <LocationPanel
           :location="location()"
-          :required="page === 'addresses'"
           editable
           @update:location="
             form.lat = $event.lat;

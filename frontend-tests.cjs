@@ -559,6 +559,16 @@ test("saved pickup addresses retain coordinates and province without replacing m
     address: "شارع الاستقلال قرب السوق",
     location: { lat: 30.51, lng: 47.83 },
   };
+  for (const location of [
+    { lat: 91, lng: 44 },
+    { lat: 33, lng: -181 },
+    { lat: NaN, lng: 44 },
+  ]) {
+    await assert.rejects(
+      api("/api/addresses", { ...address, location }),
+      /إحداثيات صحيحة/,
+    );
+  }
   const saved = (await api("/api/addresses", address)).at(-1);
   const sender = merchantSender(user, saved);
   assert.equal(sender.name, user.name);

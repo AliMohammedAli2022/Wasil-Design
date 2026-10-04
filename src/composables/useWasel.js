@@ -1,3 +1,4 @@
+import { provinces } from "../services/geography.js";
 import { merchantSender } from "../services/addressBook.js";
 import ViewHost from "../components/ViewHost.vue";
 import { provide } from "vue";
@@ -265,26 +266,7 @@ export function useWasel(application = currentApplication()) {
       "waiting",
     ],
     closed = ["delivered", "returned", "cancelled", "completed"];
-  const provinces = [
-    "بغداد",
-    "البصرة",
-    "نينوى",
-    "أربيل",
-    "النجف",
-    "كربلاء",
-    "ذي قار",
-    "بابل",
-    "ديالى",
-    "الأنبار",
-    "صلاح الدين",
-    "واسط",
-    "ميسان",
-    "المثنى",
-    "القادسية",
-    "كركوك",
-    "السليمانية",
-    "دهوك",
-  ];
+
   let installPrompt = null,
     toastTimer;
   let lastLocationSent = 0;
