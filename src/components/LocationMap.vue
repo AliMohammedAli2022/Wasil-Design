@@ -3,12 +3,15 @@ import { ref, watch, onMounted, onBeforeUnmount } from "vue";
 const props = defineProps({ groups: Array, movableLocation: Object });
 const emit = defineEmits(["location-change", "courier-select"]);
 const host = ref(),
-  failed = ref(false);
+  failed = ref(false),
+  creditsOpen = ref(true);
+let creditsTimer;
 let map,
   observer,
   locationMarker,
   disposed = false;
 onMounted(async () => {
+  creditsTimer = setTimeout(() => (creditsOpen.value = false), 5000);
   try {
     const L = await import("leaflet");
     if (disposed) return;
@@ -184,6 +187,7 @@ watch(
 );
 onBeforeUnmount(() => {
   disposed = true;
+  clearTimeout(creditsTimer);
   observer?.disconnect();
   map?.stop();
   map?.remove();
@@ -192,53 +196,92 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div>
-    <div
-      ref="host"
-      :class="[
-        'geographic-map',
-        { 'has-couriers': props.groups.some((g) => g.vehicle) },
-      ]"
-      :style="{
-        height: (props.groups.some((g) => g.vehicle) ? 380 : 280) + 'px',
-        borderRadius: '18px',
-        overflow: 'hidden',
-        isolation: 'isolate',
-      }"
-      role="region"
-      aria-label="خريطة مواقع الطلبات"
-    ></div>
-    <p class="map-attribution" dir="ltr">
-      ©
-      <a
-        href="https://www.openstreetmap.org/copyright"
-        target="_blank"
-        rel="noopener noreferrer"
-        >OpenStreetMap contributors</a
-      >
-    </p>
+    <div class="map-frame">
+      <div
+        ref="host"
+        :class="[
+          'geographic-map',
+          { 'has-couriers': props.groups.some((g) => g.vehicle) },
+        ]"
+        :style="{
+          height: (props.groups.some((g) => g.vehicle) ? 380 : 280) + 'px',
+          borderRadius: '18px',
+          overflow: 'hidden',
+          isolation: 'isolate',
+        }"
+        role="region"
+        aria-label="خريطة مواقع الطلبات"
+      ></div>
+      <details class="map-credits" :open="creditsOpen" dir="ltr">
+        <summary
+          aria-label="معلومات مصدر الخريطة"
+          :aria-expanded="creditsOpen"
+          @click.prevent="creditsOpen = !creditsOpen"
+        >
+          <span aria-hidden="true">i</span>
+        </summary>
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          >© OpenStreetMap contributors</a
+        >
+      </details>
+    </div>
     <p v-if="failed" class="file-help">
       تعذر تحميل بعض تفاصيل الخريطة. تبقى قائمة المواقع والاتجاهات متاحة.
     </p>
   </div>
 </template>
 <style scoped>
-.map-attribution {
-  margin: 4px 0 0;
-  font:
-    10px/1.5 Arial,
-    sans-serif;
-  color: #526578;
-  text-align: end;
+.map-frame {
+  position: relative;
 }
-.map-attribution a {
-  padding: 0 !important;
+.map-credits {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 1;
+  color: #526578;
+  font:
+    12px/1.5 Arial,
+    sans-serif;
+}
+.map-credits summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #cedbe2;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  list-style: none;
+  font:
+    bold 17px/1 Georgia,
+    serif;
+}
+.map-credits summary::-webkit-details-marker {
+  display: none;
+}
+.map-credits summary:focus-visible {
+  outline: 2px solid #00567a;
+  outline-offset: 2px;
+}
+.map-credits a {
+  position: absolute;
+  right: 34px;
+  bottom: 0;
+  width: max-content;
+  padding: 5px 7px !important;
   margin: 0 !important;
   border: 0 !important;
-  background: transparent !important;
-  color: inherit !important;
+  border-radius: 6px;
+  background: #fff !important;
+  color: #526578 !important;
   font: inherit !important;
   text-decoration: underline;
-  display: inline !important;
 }
 .geographic-map :deep(.leaflet-control-zoom a) {
   display: flex !important;
@@ -260,8 +303,5 @@ onBeforeUnmount(() => {
     sans-serif;
   width: 100%;
   text-align: center;
-}
-:global(html[data-theme="dark"] .map-attribution) {
-  color: #b4cad5;
 }
 </style>
