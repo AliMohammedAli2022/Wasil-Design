@@ -6,7 +6,7 @@ import FormInput from "../ui/FormInput.vue";
 defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
 import { useViewState } from "../../composables/useViewState.js";
-const { ui, state } = useViewState();
+const { ui } = useViewState();
 </script>
 <template>
   <template v-if="model.state.authRole"
@@ -31,10 +31,22 @@ const { ui, state } = useViewState();
         <FormInput
           :model="{
             name: 'identifier',
-            label: 'اسم المستخدم أو رقم الهاتف',
+            label:
+              model.state.authRole === 'courier'
+                ? 'اسم المستخدم أو رقم الهاتف'
+                : 'اسم المستخدم',
             value: '',
-            attrs:
-              'type=&quot;text&quot; autocomplete=&quot;username&quot; autocapitalize=&quot;none&quot; spellcheck=&quot;false&quot; placeholder=&quot;اسم المستخدم أو رقم الهاتف&quot;',
+            attrs: {
+              type: 'text',
+              autocomplete: 'username',
+              autocapitalize: 'none',
+              spellcheck: 'false',
+              placeholder:
+                model.state.authRole === 'courier'
+                  ? 'اسم المستخدم أو رقم الهاتف'
+                  : 'اسم المستخدم',
+              required: true,
+            },
           }"
         />
         <div class="login-password">
@@ -44,7 +56,7 @@ const { ui, state } = useViewState();
               label: 'كلمة المرور',
               value: '',
               attrs:
-                'type=&quot;password&quot; autocomplete=&quot;current-password&quot; placeholder=&quot;أدخل كلمة المرور&quot;',
+                'type=&quot;password&quot; autocomplete=&quot;current-password&quot; placeholder=&quot;أدخل كلمة المرور&quot; required',
             }"
           />
           <ActionButton

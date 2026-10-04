@@ -97,7 +97,7 @@ test("template login fields retain typed credentials while password visibility c
   const ui = reactive({
     page: "AuthView",
     passwordVisible: false,
-    loginPhone: "",
+    loginIdentifier: "",
     loginPassword: "",
   });
   const view = mountView(

@@ -187,6 +187,28 @@ test("a draft is saved locally and appears for the courier after publication", a
     "reserved",
   );
 });
+test("username sign-in selects the correct account and rejects unknown credentials", async () => {
+  const { api } = await setup();
+  for (const role of ["merchant", "free"]) {
+    const { user } = await api("/api/login", {
+      role,
+      username: "iraq",
+      password: "iraq",
+    });
+    assert.equal(user.accountType || user.role, role);
+    for (const [username, password] of [
+      ["iraq", "wrong"],
+      ["unknown", "iraq"],
+      ["07700000001", "iraq"],
+      ["", ""],
+    ])
+      await assert.rejects(
+        api("/api/login", { role, username, password }),
+        /اسم المستخدم أو كلمة المرور/,
+      );
+  }
+});
+
 test("registration and profile edits do not persist passwords or documents", async () => {
   const { api, values, key } = await setup();
   await api("/api/register", {

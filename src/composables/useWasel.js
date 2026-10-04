@@ -159,13 +159,13 @@ export function useWasel(application = currentApplication()) {
     installVisible: false,
     passwordVisible: false,
     loginPassword: "",
-    loginPhone: "",
+    loginIdentifier: "",
   });
   function loginPage(error = "") {
     writeRoute(state.authRole, state.authIntent);
     ui.passwordVisible = false;
     ui.loginPassword = "";
-    ui.loginPhone = "";
+    ui.loginIdentifier = "";
     ui.auth = true;
     ui.page = "AuthView";
     ui.authError = error;
@@ -372,10 +372,10 @@ export function useWasel(application = currentApplication()) {
       });
     });
   }
-  async function login(role, phone, password) {
+  async function login(role, credentials, password) {
     await api("/api/login", {
       role,
-      phone,
+      ...credentials,
       password,
     });
     state.screen = "home";
@@ -383,7 +383,7 @@ export function useWasel(application = currentApplication()) {
     state.homePage = 1;
     state.registryPage = 1;
     ui.loginPassword = "";
-    ui.loginPhone = "";
+    ui.loginIdentifier = "";
     await refresh();
   }
   function nav() {
@@ -644,7 +644,7 @@ export function useWasel(application = currentApplication()) {
         const visible = p.type === "password";
         // Capture autofilled values as well before Vue patches the input type.
         ui.loginPassword = p.value;
-        ui.loginPhone = document.querySelector(
+        ui.loginIdentifier = document.querySelector(
           "#login-form input[name=identifier]",
         ).value;
         ui.passwordVisible = visible;
@@ -876,13 +876,20 @@ export function useWasel(application = currentApplication()) {
         }
       if (form.id === "login-form") {
         const identifier = f.identifier.trim();
-        if (identifier !== "iraq") {
+        if (!identifier || !f.password)
+          throw Error("أدخل اسم المستخدم وكلمة المرور");
+        if (f.role === "courier" && identifier !== "iraq") {
           const problem = phoneError(identifier);
           if (problem) throw Error(problem);
         }
         await login(
           f.role,
-          identifier === "iraq" ? identifier : phoneDigits(identifier),
+          f.role === "courier"
+            ? {
+                phone:
+                  identifier === "iraq" ? identifier : phoneDigits(identifier),
+              }
+            : { username: identifier },
           f.password,
         );
       } else if (form.id === "password-change-form") {
@@ -948,7 +955,7 @@ export function useWasel(application = currentApplication()) {
         }
         if (r.step === 4) {
           await registerAccount(r, f.verificationCode);
-          await login(r.role, r.phone, r.password);
+          await login(r.role, { phone: r.phone }, r.password);
           toast("تم إنشاء الحساب");
           state.registration = null;
         } else {
@@ -1426,7 +1433,7 @@ export function useWasel(application = currentApplication()) {
         await registerAccount(state.registration);
         const r = state.registration;
         closeModal();
-        await login("courier", r.phone, r.password);
+        await login("courier", { phone: r.phone }, r.password);
         state.registration = null;
         toast("تم إنشاء حساب المندوب");
       }

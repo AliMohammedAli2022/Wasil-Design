@@ -86,8 +86,8 @@ test("phone helpers keep English digits and stop at eleven", async () => {
   assert.match(PHONE_ATTRIBUTES, /pattern="07\[789\]\[0-9\]\{8\}"/);
 });
 
-test("login allows usernames or phone numbers for both roles", async () => {
-  for (const role of ["merchant", "courier"]) {
+test("merchant and free login request usernames without phone constraints", async () => {
+  for (const role of ["merchant", "free", "courier"]) {
     const { html } = await renderPage(
       "AuthView",
       (a) => (a.state.authRole = role),
@@ -96,6 +96,10 @@ test("login allows usernames or phone numbers for both roles", async () => {
     assert.ok(field, "missing login identifier for " + role);
     assert.match(field[0], /type="text"/);
     assert.match(field[0], /autocomplete="username"/);
+    if (role !== "courier") {
+      assert.match(field[0], /placeholder="اسم المستخدم"/);
+      assert.doesNotMatch(html, /اسم المستخدم أو رقم الهاتف/);
+    }
     assert.doesNotMatch(
       field[0],
       /inputmode="numeric"|pattern=|maxlength="11"/,

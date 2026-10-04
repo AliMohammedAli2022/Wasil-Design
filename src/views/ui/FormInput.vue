@@ -17,9 +17,9 @@ const inputProps = computed(() => {
     };
   }
   if (ui.page === "AuthView" && name === "identifier") {
-    result.value = ui.loginPhone;
+    result.value = ui.loginIdentifier;
     result.onInput = (event) => {
-      ui.loginPhone = event.target.value;
+      ui.loginIdentifier = event.target.value;
     };
   }
   return result;

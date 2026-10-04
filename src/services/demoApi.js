@@ -1219,9 +1219,11 @@ export function createDemoApi(
         "نوع الحساب غير متاح في هذا التطبيق",
       );
       // Public demo credentials select the sample for the chosen account type.
-      if (p.phone === "iraq") {
+      if (Object.hasOwn(p, "username") || p.phone === "iraq") {
         must(
-          ["merchant", "free"].includes(p.role) && p.password === "iraq",
+          ["merchant", "free"].includes(p.role) &&
+            (p.username ?? p.phone) === "iraq" &&
+            p.password === "iraq",
           "اسم المستخدم أو كلمة المرور غير صحيحة",
         );
         const demoAccount = data.users.find(
