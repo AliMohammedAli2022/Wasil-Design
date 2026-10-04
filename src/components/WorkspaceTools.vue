@@ -1,12 +1,13 @@
 <script setup>
 import AddressBook from "./AddressBook.vue";
+import CustomerBook from "./CustomerBook.vue";
 import CloseIcon from "./CloseIcon.vue";
 import { ref, reactive, computed, onMounted, nextTick } from "vue";
 import LocationPanel from "./LocationPanel.vue";
 import { phoneDigits } from "../services/formFields.js";
 import { api } from "../services/api.js";
 import { accountType } from "../services/accounts.js";
-import { areas, distance } from "../services/orderPolicy.js";
+import { distance } from "../services/orderPolicy.js";
 import { addressLocation } from "../services/coordinates.js";
 const props = defineProps({ snapshot: Object, portal: String });
 onMounted(() => {
@@ -53,7 +54,7 @@ async function openAdminPage(key) {
   panel.value.querySelector(".workspace-dialog-head h2")?.focus();
 }
 const selected = ref([]);
-const query = ref("");
+const customerBookSession = ref(0);
 const u = computed(() => props.snapshot.user);
 const searchLocation = ref(null);
 const sharedOutlet = ref(null);
@@ -123,11 +124,6 @@ const topics = computed(() =>
         ]
       : ["طلب مساعدة", "تعذر التحقق", "أخرى"],
 );
-const items = computed(() =>
-  (u.value[page.value] || []).filter((x) =>
-    JSON.stringify(x).includes(query.value),
-  ),
-);
 const batchOrders = computed(() =>
   props.snapshot.orders.filter(
     (o) => ["arrived", "waiting"].includes(o.status) && o.courier,
@@ -163,6 +159,7 @@ function reset() {
 }
 async function open(p) {
   if (p === "addresses") addressBookSession.value++;
+  if (p === "customers") customerBookSession.value++;
   if (p === "outlets")
     searchLocation.value = {
       ...(u.value.location || { lat: 33.3, lng: 44.43 }),
@@ -170,7 +167,6 @@ async function open(p) {
   page.value = p;
   adminPage.value = props.portal === "outlet" ? "topup" : "";
   reset();
-  query.value = "";
   panel.value.showModal();
   if (p === "admin")
     await run(async () => {
@@ -191,27 +187,11 @@ async function run(fn) {
     busy.value = false;
   }
 }
-function edit(x) {
-  reset();
-  Object.assign(form, x, {
-    lat: x.location?.lat ?? "",
-    lng: x.location?.lng ?? "",
-  });
-}
 function location() {
   return addressLocation(form.lat, form.lng);
 }
 async function save() {
   await run(async () => {
-    if (page.value === "customers") {
-      await api("/api/customers", {
-        ...form,
-        province: form.province || u.value.province,
-        location: location(),
-      });
-      reset();
-      message.value = "تم الحفظ";
-    }
     if (page.value === "support") {
       await api("/api/support", form);
       reset();
@@ -241,9 +221,6 @@ async function save() {
       message.value = "تم حفظ إعدادات التجربة المحلية";
     }
   });
-}
-async function remove(x) {
-  await run(() => api("/api/" + page.value, { action: "delete", id: x.id }));
 }
 async function adminAction(action, extra = {}) {
   await run(async () => {
@@ -351,79 +328,12 @@ const settingsLabels = {
       :user="u"
       @refresh="emit('refresh')"
     />
-    <template v-if="page === 'customers'">
-      <label
-        >بحث بالاسم أو الهاتف أو العنوان<input v-model="query" type="search"
-      /></label>
-      <div class="workspace-list">
-        <article v-for="x in items" :key="x.id">
-          <strong>{{ x.name }}</strong>
-          <p>
-            {{ x.phone }} · {{ x.province || u.province }} · {{ x.area }} ·
-            {{ x.address }}
-          </p>
-          <LocationPanel
-            v-if="x.location"
-            :location="x.location"
-            :name="x.name"
-          />
-          <button type="button" @click="edit(x)">تعديل</button>
-          <button type="button" @click="remove(x)" :disabled="busy">حذف</button>
-        </article>
-        <p v-if="!items.length">لا توجد بيانات مطابقة.</p>
-      </div>
-      <form @submit.prevent="save" class="form-stack">
-        <h3>
-          {{ form.id ? "تعديل" : "إضافة" }}
-          مستلم
-        </h3>
-        <label
-          >الاسم<input
-            v-model.trim="form.name"
-            required
-            maxlength="80" /></label
-        ><label
-          >الهاتف<input
-            v-model="form.phone"
-            @input="form.phone = phoneDigits($event.target.value)"
-            inputmode="numeric"
-            pattern="07[789][0-9]{8}"
-            maxlength="11"
-            required
-            dir="ltr" /></label
-        ><label
-          >المحافظة<input
-            v-model.trim="form.province"
-            name="province"
-            required
-            maxlength="80" /></label
-        ><label
-          >المنطقة<input
-            name="area"
-            v-model.trim="form.area"
-            list="workspace-areas"
-            required /></label
-        ><datalist id="workspace-areas">
-          <option
-            v-for="a in areas[form.province] || []"
-            :key="a"
-            :value="a"
-          /></datalist
-        ><label
-          >العنوان<input v-model.trim="form.address" required maxlength="200"
-        /></label>
-        <LocationPanel
-          :key="locationSession"
-          :location="location()"
-          editable
-          @update:location="
-            form.lat = $event?.lat ?? '';
-            form.lng = $event?.lng ?? '';
-          "
-        /><button class="primary-button" :disabled="busy">حفظ</button
-        ><button type="button" @click="reset">إضافة جديدة</button>
-      </form>
-    </template>
+    <CustomerBook
+      v-if="page === 'customers'"
+      :key="customerBookSession"
+      :user="u"
+      @refresh="emit('refresh')"
+    />
     <template v-if="page === 'batch'"
       ><p>
         مجموعة لنفس المندوب ونفس عنوان الاستلام. اختر فقط الشحنات الجاهزة؛
@@ -1083,10 +993,6 @@ const settingsLabels = {
 .workspace-dialog summary {
   cursor: pointer;
   font-weight: 700;
-}
-.workspace-list {
-  max-height: 260px;
-  overflow: auto;
 }
 .workspace-dialog p {
   overflow-wrap: anywhere;
