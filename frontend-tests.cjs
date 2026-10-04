@@ -639,6 +639,7 @@ test("order pickup titles are saved and reused without duplicate addresses or ch
       ...first.sender,
       addressName: "مخزن الملابس",
       address: "شارع الرواد قرب السوق",
+      location: { lat: 33.32, lng: 44.34 },
     },
   });
   const edited = (await api("/api/state")).user.addresses.find(
@@ -646,4 +647,75 @@ test("order pickup titles are saved and reused without duplicate addresses or ch
   );
   assert.ok(edited);
   assert.equal(saved[0].address, sender.address);
+});
+
+test("address conflicts block duplicate names or coordinates without changing orders and optional pickup phones persist", async () => {
+  const { api } = await setup();
+  await api("/api/login", { role: "merchant" });
+  const before = await api("/api/state");
+  const address = {
+    name: "مخزن الربيع",
+    province: "بغداد",
+    area: "زيونة",
+    address: "شارع الربيعي",
+    location: { lat: 33.33, lng: 44.47 },
+  };
+  const saved = (await api("/api/addresses", address)).at(-1);
+  await assert.rejects(
+    api("/api/addresses", {
+      ...address,
+      name: "  مخزن   الربيع  ",
+      location: { lat: 33.32, lng: 44.34 },
+    }),
+    /اسم العنوان موجود/,
+  );
+  await assert.rejects(
+    api("/api/addresses", { ...address, name: "مخزن آخر" }),
+    /هذا الموقع محفوظ/,
+  );
+  await api("/api/addresses", { ...saved, address: "شارع الربيعي قرب السوق" });
+  const { merchantSender } = await import("./src/services/addressBook.js");
+  const sender = {
+    ...merchantSender(before.user, saved),
+    phone2: "07812345678",
+  };
+  const first = await api("/api/orders", {
+    ...before.orders[0],
+    sender,
+    publish: false,
+  });
+  assert.equal(first.sender.phone2, sender.phone2);
+  assert.equal(first.sender.businessName, before.user.businessName);
+  const baseline = await api("/api/state");
+  for (const update of [
+    { addressName: "مخزن آخر" },
+    { location: { lat: 33.32, lng: 44.34 } },
+  ]) {
+    await assert.rejects(
+      api("/api/orders", {
+        ...before.orders[0],
+        sender: { ...sender, ...update },
+        publish: false,
+      }),
+      /محفوظ|موجود/,
+    );
+    await assert.rejects(
+      api(`/api/orders/${first.id}/action`, {
+        action: "edit",
+        sender: { ...sender, ...update },
+      }),
+      /محفوظ|موجود/,
+    );
+  }
+  const after = await api("/api/state");
+  assert.deepEqual(after.orders, baseline.orders);
+  assert.deepEqual(after.user.addresses, baseline.user.addresses);
+  assert.equal(after.user.phone2, before.user.phone2);
+  await assert.rejects(
+    api("/api/orders", {
+      ...before.orders[0],
+      sender: { ...sender, phone2: "123" },
+    }),
+    /الاحتياط/,
+  );
 });

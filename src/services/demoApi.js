@@ -15,7 +15,12 @@ import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { createDemoData, statuses, settings as defaults } from "./demoData.js";
-import { merchantSender, rememberOrderPlaces } from "./addressBook.js";
+import {
+  merchantSender,
+  rememberOrderPlaces,
+  addressConflict,
+  pickupAddress,
+} from "./addressBook.js";
 import {
   BEFORE,
   orderVehicles,
@@ -501,6 +506,8 @@ export function createDemoApi(
     });
   }
   function validateOrder(p) {
+    if (p.sender?.phone2)
+      must(supportedPhone(p.sender.phone2), "رقم موبايل الاحتياط غير صالح");
     must(
       ["merchant", "free"].includes(p.kind) &&
         ["normal", "vip"].includes(p.service),
@@ -574,6 +581,7 @@ export function createDemoApi(
       merchant();
       requireState(BEFORE);
       validateOrder({ ...o, ...p });
+      pickupAddress(u, p.sender ?? o.sender);
       const fields = [
         "amount",
         "count",
@@ -1342,6 +1350,10 @@ export function createDemoApi(
               Math.abs(p.location.lng) <= 180,
             "حدد موقع عنوان الاستلام بإحداثيات صحيحة",
           );
+        if (key === "addresses") {
+          const problem = addressConflict(u.addresses, p, p.id);
+          must(!problem, problem);
+        }
         const v = { ...p, id: p.id || id(key === "addresses" ? "ADR" : "CUS") };
         delete v.action;
         const i = u[key].findIndex((x) => x.id === v.id);
@@ -1600,12 +1612,14 @@ export function createDemoApi(
       must(u.role === "merchant", "للتاجر فقط");
       must(online(), "اتصل بالإنترنت لحفظ أو نشر الطلب");
       validateOrder(p);
+      const sender = p.kind === "free" ? p.sender : merchantSender(u, p.sender);
+      pickupAddress(u, sender);
       const o = {
         ...copy(p),
         id: nextOrderNumber(data),
         merchant: u.id,
         courier: null,
-        sender: p.kind === "free" ? p.sender : merchantSender(u, p.sender),
+        sender,
         status: p.publish ? "published" : "draft",
         settled: false,
         goodsPaid: false,
@@ -1616,9 +1630,9 @@ export function createDemoApi(
         attempts: 0,
         handoverCode: String(Math.floor(100000 + Math.random() * 900000)),
       };
+      rememberOrderPlaces(u, o, id);
       data.orders.push(o);
       change(o, o.status, "إنشاء الطلب");
-      rememberOrderPlaces(u, o, id);
       persist();
       return visible(o, u);
     }

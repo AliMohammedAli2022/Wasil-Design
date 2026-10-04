@@ -7,7 +7,8 @@ export function addFreeDeliveryDemo(data, sample = data) {
     ...structuredClone(merchant),
     id: "FREE-DEMO",
     accountType: "free",
-    name: "مكتب الرافدين للتوصيل",
+    name: "مصطفى سعد كريم",
+    businessName: "مكتب الرافدين للتوصيل",
     phone: "07700000007",
     walletId: "W-FREE-DEMO",
   };

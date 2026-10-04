@@ -45,6 +45,21 @@ function refreshFields(target, sample) {
 }
 
 export function refreshSampleContent(data) {
+  for (const [id, name, businessName] of [
+    ["MER-DEMO", "علي حسن كاظم", "متجر الأناقة للملابس"],
+    ["FREE-DEMO", "مصطفى سعد كريم", "مكتب الرافدين للتوصيل"],
+  ]) {
+    const user = data.users.find((user) => user.id === id);
+    if (user?.name === businessName && !user.businessName) {
+      Object.assign(user, { name, businessName });
+      for (const order of data.orders.filter(
+        (order) => order.merchant === id,
+      )) {
+        if (order.sender?.name === businessName)
+          Object.assign(order.sender, { name, businessName });
+      }
+    }
+  }
   if (data.sampleContentVersion === 1) return;
   const sample = createDemoData();
   for (const collection of ["users", "orders"]) {

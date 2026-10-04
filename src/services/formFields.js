@@ -18,7 +18,12 @@ export const clone = (value) => structuredClone(toRaw(value));
 
 export const PHONE_LENGTH = 11;
 // Field names that hold a phone number, shared by the sanitiser and the submit check.
-export const PHONE_FIELDS = new Set(["phone", "phone2", "senderPhone"]);
+export const PHONE_FIELDS = new Set([
+  "phone",
+  "phone2",
+  "senderPhone",
+  "senderPhone2",
+]);
 // Shared attributes: digits-only keyboard, eleven-digit pattern, LTR alignment.
 export const PHONE_ATTRIBUTES =
   'type="text" inputmode="numeric" pattern="07[789][0-9]{8}" minlength="11" maxlength="11" dir="ltr"';

@@ -1,5 +1,5 @@
 import { provinces } from "../services/geography.js";
-import { merchantSender } from "../services/addressBook.js";
+import { merchantSender, pickupAddress } from "../services/addressBook.js";
 import ViewHost from "../components/ViewHost.vue";
 import { provide } from "vue";
 import { viewStateKey } from "./useViewState.js";
@@ -513,7 +513,8 @@ export function useWasel(application = currentApplication()) {
           f.senderProvince || d.sender.province || state.S.user.province,
         addressId: d.sender.addressId || "",
         addressName: f.senderAddressName,
-        phone2: state.S.user.phone2,
+        phone2: f.senderPhone2 || "",
+        businessName: state.S.user.businessName,
         area: f.senderArea,
         address: f.senderAddress,
         location: {
@@ -521,6 +522,7 @@ export function useWasel(application = currentApplication()) {
           lng: Number(f.lng),
         },
       };
+      pickupAddress(state.S.user, d.sender);
     } else if (state.wizard.step === 2) {
       d.recipient = {
         name: f.name,
@@ -1097,12 +1099,13 @@ export function useWasel(application = currentApplication()) {
       const address = state.S.user.addresses?.find(
         (a) => a.id === e.target.value,
       );
+      const backupPhone =
+        f.elements.senderPhone2?.value ?? state.wizard.data.sender.phone2;
       state.wizard.data.sender = merchantSender(
         state.S.user,
-        e.target.value === "new"
-          ? { province: state.S.user.province }
-          : address,
+        e.target.value === "new" ? { province: "" } : address,
       );
+      state.wizard.data.sender.phone2 = backupPhone;
       state.wizard.data.pickupChoice = e.target.value;
       ui.formRevision++;
       render();

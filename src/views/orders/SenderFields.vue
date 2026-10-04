@@ -15,7 +15,7 @@ const addressForm = reactive({
     sender.addressName ??
     props.model.u.addresses?.find((a) => a.id === sender.addressId)?.name ??
     (props.model.d.pickupChoice === "new" ? "" : "عنوان الملف الشخصي"),
-  province: sender.province || props.model.u.province,
+  province: sender.province ?? props.model.u.province,
   area: sender.area || "",
   address: sender.address || "",
   lat: sender.location?.lat ?? "",
@@ -84,18 +84,28 @@ const addressForm = reactive({
       التوصيل الحر مقابل أجرة فقط، دون دفع أو تحصيل قيمة البضاعة.
     </p></template
   >
-  <template v-else
-    ><p class="muted">
-      تُعبّأ بيانات التاجر تلقائياً من ملفه الشخصي. يمكنك اختيار موقع استلام
-      بديل من «عناويني» أو إضافة عنوان جديد يُحفظ فيها عند حفظ الطلب أو نشره.
-    </p>
+  <template v-else>
+    <DetailRow :model="{ label: 'اسم التاجر', value: model.u.name }" />
+    <DetailRow
+      :model="{
+        label: 'اسم النشاط',
+        value: model.u.businessName || 'غير محدد',
+      }" />
+    <DetailRow :model="{ label: 'رقم الموبايل', value: model.u.phone }" />
+    <FormInput
+      :model="{
+        name: 'senderPhone2',
+        label: 'رقم موبايل احتياط (اختياري)',
+        value: model.d.sender.phone2 ?? model.u.phone2,
+        attrs: model.PHONE_ATTRIBUTES,
+      }" />
     <FormSelect
       :model="{
         name: 'pickupAddress',
         label: 'عنوان استلام الطلب',
         values: {
-          '': 'عنوان الملف الشخصي',
           new: 'إضافة عنوان جديد',
+          '': 'العنوان الأساسي من الملف الشخصي',
           ...Object.fromEntries(
             (model.u.addresses || []).map((a) => [
               a.id,
@@ -105,19 +115,6 @@ const addressForm = reactive({
         },
         value: model.d.pickupChoice ?? model.d.sender.addressId ?? '',
       }" />
-    <DetailRow
-      :model="{
-        label: 'اسم التاجر',
-        value: model.u.name,
-      }" />
-    <DetailRow
-      :model="{
-        label: 'الهاتف الأساسي',
-        value: model.u.phone,
-      }" />
-    <DetailRow
-      v-if="model.u.phone2"
-      :model="{ label: 'الهاتف الاحتياطي', value: model.u.phone2 }" />
     <AddressFields
       :form="addressForm"
       :default-province="model.u.province"

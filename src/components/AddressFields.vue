@@ -39,6 +39,7 @@ const location = computed(() =>
   /></label>
   <label
     >المحافظة<select v-model="form.province" :name="names.province" required>
+      <option value="" disabled>اختر المحافظة</option>
       <option
         v-for="province in provinceOptions"
         :key="province"

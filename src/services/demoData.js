@@ -29,7 +29,8 @@ export function createDemoData() {
   const merchant = {
     id: "MER-DEMO",
     role: "merchant",
-    name: "متجر الأناقة للملابس",
+    name: "علي حسن كاظم",
+    businessName: "متجر الأناقة للملابس",
     phone: "07700000001",
     province: "بغداد",
     area: "الكرادة",
