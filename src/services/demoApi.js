@@ -11,6 +11,7 @@ import {
 } from "./orderStatuses.js";
 import { removeDeviceDraftStorage } from "./storageMigrations.js";
 import { refreshSampleContent } from "./sampleContent.js";
+import { populatePreviewAccounts } from "./previewContent.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
@@ -151,6 +152,7 @@ export function createDemoApi(
     data.expandedDemoOutlets = true;
   }
   refreshSampleContent(data);
+  populatePreviewAccounts(data, createDemoData());
   for (const u of data.users) {
     u.addresses ??= [];
     u.customers ??= [];
@@ -1289,6 +1291,7 @@ export function createDemoApi(
         failures: [],
       };
       data.users.push(u);
+      populatePreviewAccounts(data, createDemoData());
       data.lastByRole[accountType(u)] = uid;
       persist();
       return { user: copy(u) };

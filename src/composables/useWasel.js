@@ -659,8 +659,7 @@ export function useWasel(application = currentApplication()) {
           visible ? "إخفاء كلمة المرور" : "إظهار كلمة المرور",
         );
         b.setAttribute("aria-pressed", String(visible));
-      } else if (a === "new-free") startOrder("free");
-      else if (a === "order") orderDetail(b.dataset.id);
+      } else if (a === "order") orderDetail(b.dataset.id);
       else if (a === "filter-open") {
         const menu = $("#status-menu");
         if (menu.matches(":popover-open")) menu.hidePopover();

@@ -18,10 +18,11 @@ const slides = [
     icon: "pin",
   },
   {
-    title: "مستعجل؟ اطلب كابتن",
-    text: "توصيل حر لشحنتك بدون جدولة زمنية",
-    action: "اطلب الآن",
-    event: "new-free",
+    title: "كل شحناتك بمكان واحد",
+    text: "تابع تفاصيل طلباتك وحالات التوصيل",
+    action: "عرض السجل",
+    event: "nav",
+    screen: "registry",
     icon: "send",
   },
 ];

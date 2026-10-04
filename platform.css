@@ -24,7 +24,7 @@ body{background:var(--brand-canvas)}
 .primary-button:hover{background:var(--brand-primary-deep)}
 .secondary-button,.order-actions button,.subtle-button{border-color:var(--brand-border);background:var(--brand-primary-soft);color:var(--brand-primary)}
 .secondary-button:hover,.order-actions button:hover{border-color:var(--brand-accent)}
-button[data-action="new-free"],button[data-action="save-order"][data-publish="true"]{background:var(--brand-accent);color:#173744;box-shadow:0 4px 14px #f47d2f33}
+button[data-action="save-order"][data-publish="true"]{background:var(--brand-accent);color:#173744;box-shadow:0 4px 14px #f47d2f33}
 .metric{border:1px solid var(--brand-border)}
 .metric-label .material-symbols-outlined{background:var(--brand-primary-soft);color:var(--brand-primary)}
 .metric.orange .material-symbols-outlined{background:var(--brand-accent-soft);color:var(--brand-accent-ink)}

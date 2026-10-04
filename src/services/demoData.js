@@ -3,6 +3,7 @@
 import { BASE_ORDER_COUNT, SAMPLE_ORDER_COUNT } from "./orderNumbers.js";
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { statusLabel } from "./orderStatuses.js";
+import { populatePreviewAccounts } from "./previewContent.js";
 export { statuses } from "./orderStatuses.js";
 const workflowStages = [
   "draft",
@@ -370,6 +371,7 @@ export function createDemoData() {
     lastByRole: { merchant: merchant.id, courier: courier.id },
   };
   addFreeDeliveryDemo(data);
+  populatePreviewAccounts(data);
   return data;
 }
 export const settings = {

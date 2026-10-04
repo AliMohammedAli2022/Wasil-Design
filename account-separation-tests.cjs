@@ -69,6 +69,86 @@ test("free account copies merchant features with independent orders, balances, c
   );
 });
 
+test("new preview accounts include every order state and independent saved places", async () => {
+  const { storage, createDemoApi } = await workspace();
+  const { orderStatus, statuses } =
+    await import("./src/services/orderStatuses.js");
+  const api = createDemoApi(storage);
+  const ids = new Set();
+  for (const role of ["merchant", "free"]) {
+    const { user } = await api("/api/register", {
+      role,
+      name: "حسن علي كريم",
+      ...(role === "merchant" ? { businessName: "مكتبة القلم" } : {}),
+      phone: "07912345671",
+      province: "بغداد",
+      area: "الكرادة",
+      address: "شارع الصناعة قرب الجامعة التكنولوجية",
+      location: { lat: 33.31, lng: 44.44 },
+      verificationCode: "111111",
+    });
+    await api("/api/login", { role, phone: user.phone });
+    const state = await api("/api/state");
+    assert.deepEqual(
+      new Set(state.orders.map(orderStatus)),
+      new Set(Object.keys(statuses)),
+    );
+    assert.equal(state.orders.length, 12);
+    assert.equal(user.addresses.length, 4);
+    assert.equal(new Set(user.addresses.map((address) => address.id)).size, 4);
+    assert.ok(user.customers.length > 0);
+    for (const order of state.orders) {
+      assert.match(order.id, /^\d+$/);
+      assert.ok(!ids.has(order.id));
+      ids.add(order.id);
+      assert.equal(order.sender.name, user.name);
+      assert.equal(order.sender.phone, user.phone);
+      assert.equal(order.recipient.name.split(" ").length >= 3, true);
+      assert.doesNotMatch(JSON.stringify(order), /تجريبي|وهمي/);
+    }
+    const reopened = createDemoApi(storage);
+    await reopened("/api/login", { role, phone: user.phone });
+    assert.deepEqual(
+      (await reopened("/api/state")).orders.map((order) => order.id),
+      state.orders.map((order) => order.id),
+    );
+  }
+});
+
+test("preview migration preserves edits and does not restore deleted sample content", async () => {
+  const { storage, key, createDemoApi } = await workspace();
+  const { createDemoData } = await import("./src/services/demoData.js");
+  const { populatePreviewAccounts } =
+    await import("./src/services/previewContent.js");
+  const data = createDemoData();
+  const user = data.users.find((user) => user.id === "FREE-DEMO");
+  delete user.previewContentVersion;
+  user.name = "محمد خالد حسن";
+  user.addresses[0].address = "عنوان قمت بتعديله";
+  data.orders = data.orders.filter(
+    (order) => order.merchant !== user.id || order.status === "published",
+  );
+  const original = structuredClone(
+    data.orders.find((order) => order.merchant === user.id),
+  );
+  storage.setItem(key, JSON.stringify(data));
+  const api = createDemoApi(storage);
+  await api("/api/login", { role: "free" });
+  const state = await api("/api/state");
+  assert.equal(state.user.name, user.name);
+  assert.equal(state.user.addresses[0].address, "عنوان قمت بتعديله");
+  assert.equal(state.user.addresses.length, 4);
+  assert.deepEqual(
+    state.orders.find((order) => order.id === original.id).recipient,
+    original.recipient,
+  );
+  const saved = JSON.parse(storage.getItem(key));
+  saved.users.find((user) => user.id === "FREE-DEMO").addresses = [];
+  saved.orders = saved.orders.filter((order) => order.merchant !== "FREE-DEMO");
+  const before = structuredClone(saved);
+  populatePreviewAccounts(saved, createDemoData());
+  assert.deepEqual(saved, before);
+});
 
 test("same phone can register separate merchant and free identities and cannot cross application entry points", async () => {
   const { storage, createDemoApi } = await workspace();

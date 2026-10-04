@@ -80,24 +80,6 @@ onBeforeUnmount(() => document.body.classList.remove("auth-mode"));
                 aria-hidden="true"
               ></span>
             </button>
-            <button
-              type="button"
-              data-action="new-free"
-              class="icon-button header-shortcut captain-shortcut"
-              aria-label="طلب كابتن حر وسريع"
-              title="طلب كابتن حر وسريع"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 6h11v11H3V6Zm11 4h4l3 4v3h-7M17 10v4h4M5 3h5" />
-                <circle cx="7" cy="18" r="2" />
-                <circle cx="17" cy="18" r="2" />
-              </svg>
-              <span class="captain-fast-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M14 2 5 13h6l-1 9 9-12h-6l1-8Z" />
-                </svg>
-              </span>
-            </button>
           </template>
           <button
             type="button"

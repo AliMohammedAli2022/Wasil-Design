@@ -405,7 +405,9 @@ test("saved orders remember multiple recipients per phone and pickup locations w
   assert.deepEqual((await reopened("/api/state")).user.customers, state.user.customers);
   await reopened("/api/register", { businessName: "نشاط تجريبي", verificationCode: "111111", role: "merchant", name: "تاجر آخر", phone: "07912345672", province: "بغداد" });
   await reopened("/api/login", { role: "merchant", phone: "07912345672" });
-  assert.equal((await reopened("/api/state")).user.customers.length, 0);
+  const otherCustomers = (await reopened("/api/state")).user.customers;
+  assert.ok(otherCustomers.length > 0);
+  assert.ok(otherCustomers.every((customer) => customer.phone !== recipient.phone));
 });
 test("free delivery prevents goods collection and retry count is unlimited", async () => {
   const t = await setup();
