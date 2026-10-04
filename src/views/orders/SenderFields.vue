@@ -74,15 +74,15 @@ defineProps({ model: { type: Object, required: true } });
   >
   <template v-else
     ><p class="muted">
-      اختر مكاناً محفوظاً أو أضف مكاناً جديداً؛ يُحفظ تلقائياً عند حفظ الطلب أو
-      نشره.
+      تُعبّأ بيانات التاجر تلقائياً من ملفه الشخصي. يمكنك اختيار موقع استلام
+      بديل من «عناويني» أو إضافة عنوان للشحنة.
     </p>
     <FormSelect
       :model="{
         name: 'pickupAddress',
         label: 'عنوان الاستلام',
         values: {
-          '': 'عنوان النشاط الأساسي',
+          '': 'عنوان الملف الشخصي',
           new: 'إضافة مكان جديد',
           ...Object.fromEntries(
             (model.u.addresses || []).map((a) => [
@@ -95,8 +95,15 @@ defineProps({ model: { type: Object, required: true } });
       }" />
     <DetailRow
       :model="{
-        label: 'اسم المتجر',
+        label: 'اسم التاجر',
         value: model.u.name,
+      }" />
+    <FormInput
+      :model="{
+        name: 'senderProvince',
+        label: 'المحافظة',
+        value: model.d.sender.province || model.u.province,
+        attrs: 'required maxlength=&quot;80&quot;',
       }" />
     <FormInput
       :model="{
@@ -114,10 +121,14 @@ defineProps({ model: { type: Object, required: true } });
       }" />
     <DetailRow
       :model="{
-        label: 'الهاتف',
+        label: 'الهاتف الأساسي',
         value: model.u.phone,
       }" />
+    <DetailRow
+      v-if="model.u.phone2"
+      :model="{ label: 'الهاتف الاحتياطي', value: model.u.phone2 }" />
     <LocationPanel
+      area-field="senderArea"
       :location="model.d.sender.location"
       :editable="true"
       :required="true"

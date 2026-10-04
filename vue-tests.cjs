@@ -269,8 +269,11 @@ test("saved pickup and recipient choices fill editable locations and preserve no
     });
   await select("pickupAddress", address.id);
   assert.deepEqual(app.state.wizard.data.sender.location, address.location);
+  assert.equal(app.state.wizard.data.sender.name, app.state.S.user.name);
+  assert.equal(app.state.wizard.data.sender.phone, app.state.S.user.phone);
+  assert.equal(app.state.wizard.data.sender.addressId, address.id);
   await select("pickupAddress", "new");
-  assert.equal(app.state.wizard.data.sender.location, undefined);
+  assert.equal(app.state.wizard.data.sender.location, null);
   app.state.wizard.step = 2;
   await select("name", recipient.name);
   assert.deepEqual(app.state.wizard.data.recipient, recipient);
@@ -307,7 +310,9 @@ test("registration separates identity and business, simplifies location and incl
       assert.doesNotMatch(html, /الاسم \/ اسم النشاط/);
     }
     if (step === 1) {
-      assert.ok(html.indexOf('name="businessName"') < html.indexOf('name="activity"'));
+      assert.ok(
+        html.indexOf('name="businessName"') < html.indexOf('name="activity"'),
+      );
       assert.match(html, /اسم النشاط التجاري/);
     }
     if (step === 2) {

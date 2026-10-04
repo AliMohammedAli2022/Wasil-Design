@@ -545,3 +545,46 @@ test("existing sample content upgrades once while preserving user edits, balance
     "اسم عدّله المستخدم",
   );
 });
+
+test("saved pickup addresses retain coordinates and province without replacing merchant contacts", async () => {
+  const { api, storage, createDemoApi } = await setup();
+  const { merchantSender } = await import("./src/services/addressBook.js");
+  await api("/api/login", { role: "merchant" });
+  const initial = await api("/api/state");
+  const user = initial.user;
+  const address = {
+    name: "مخزن البصرة",
+    province: "البصرة",
+    area: "العشار",
+    address: "شارع الاستقلال قرب السوق",
+    location: { lat: 30.51, lng: 47.83 },
+  };
+  const saved = (await api("/api/addresses", address)).at(-1);
+  const sender = merchantSender(user, saved);
+  assert.equal(sender.name, user.name);
+  assert.equal(sender.phone, user.phone);
+  assert.equal(sender.phone2, user.phone2 || "");
+  assert.equal(sender.province, address.province);
+  assert.deepEqual(sender.location, address.location);
+  assert.equal(merchantSender(user).address, user.address);
+  assert.deepEqual(merchantSender(user).location, user.location);
+  const order = await api("/api/orders", {
+    ...initial.orders[0],
+    sender,
+    publish: false,
+  });
+  assert.equal(order.sender.addressId, saved.id);
+  assert.equal(order.sender.province, address.province);
+  assert.deepEqual(order.sender.location, address.location);
+  const restored = createDemoApi(storage);
+  await restored("/api/login", { role: "merchant" });
+  const state = await restored("/api/state");
+  const selected = state.user.addresses.find((entry) => entry.id === saved.id);
+  assert.deepEqual(merchantSender(state.user, selected), sender);
+  assert.deepEqual(state.user.location, user.location);
+  assert.equal(state.user.province, user.province);
+  assert.equal(
+    state.user.addresses.filter((entry) => entry.id === saved.id).length,
+    1,
+  );
+});

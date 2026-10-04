@@ -15,7 +15,7 @@ import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { createDemoData, statuses, settings as defaults } from "./demoData.js";
-import { rememberOrderPlaces } from "./addressBook.js";
+import { merchantSender, rememberOrderPlaces } from "./addressBook.js";
 import {
   BEFORE,
   orderVehicles,
@@ -1603,19 +1603,7 @@ export function createDemoApi(
         id: nextOrderNumber(data),
         merchant: u.id,
         courier: null,
-        sender:
-          p.kind === "free"
-            ? p.sender
-            : {
-                name: u.name,
-                phone: u.phone,
-                phone2: u.phone2,
-                province: u.province,
-                area: p.sender?.area || u.area,
-                address: p.sender?.address || u.address,
-                location: p.sender?.location || u.location,
-                addressId: p.sender?.addressId || u.id,
-              },
+        sender: p.kind === "free" ? p.sender : merchantSender(u, p.sender),
         status: p.publish ? "published" : "draft",
         settled: false,
         goodsPaid: false,

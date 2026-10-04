@@ -219,7 +219,7 @@ async function save() {
     if (["addresses", "customers"].includes(page.value)) {
       await api("/api/" + page.value, {
         ...form,
-        province: u.value.province,
+        province: form.province || u.value.province,
         location: location(),
       });
       reset();
@@ -365,7 +365,10 @@ const settingsLabels = {
       <div class="workspace-list">
         <article v-for="x in items" :key="x.id">
           <strong>{{ x.name }}</strong>
-          <p>{{ x.phone }} · {{ x.area }} · {{ x.address }}</p>
+          <p>
+            {{ x.phone }} · {{ x.province || u.province }} · {{ x.area }} ·
+            {{ x.address }}
+          </p>
           <LocationPanel
             v-if="x.location"
             :location="x.location"
@@ -396,13 +399,20 @@ const settingsLabels = {
             required
             dir="ltr" /></label
         ><label
+          >المحافظة<input
+            v-model.trim="form.province"
+            name="province"
+            required
+            maxlength="80" /></label
+        ><label
           >المنطقة<input
+            name="area"
             v-model.trim="form.area"
             list="workspace-areas"
             required /></label
         ><datalist id="workspace-areas">
           <option
-            v-for="a in areas[u.province] || []"
+            v-for="a in areas[form.province] || []"
             :key="a"
             :value="a"
           /></datalist
@@ -411,6 +421,7 @@ const settingsLabels = {
         /></label>
         <LocationPanel
           :location="location()"
+          :required="page === 'addresses'"
           editable
           @update:location="
             form.lat = $event.lat;

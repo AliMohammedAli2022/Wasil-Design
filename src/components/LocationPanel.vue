@@ -11,6 +11,7 @@ const props = defineProps({
   showHint: { type: Boolean, default: true },
   showExternalActions: { type: Boolean, default: true },
   name: { type: String, default: "الموقع" },
+  areaField: { type: String, default: "area" },
 });
 const emit = defineEmits(["update:location"]);
 const point = ref(props.location || null);
@@ -29,10 +30,10 @@ function choose(value) {
   error.value = "";
   emit("update:location", value);
   const form = root.value?.closest("form");
-  if (form?.elements.area) {
+  if (form?.elements.namedItem(props.areaField)) {
     const area = nearestArea(value);
     if (area) {
-      const field = form.elements.area;
+      const field = form.elements.namedItem(props.areaField);
       if (
         field.tagName === "SELECT" &&
         ![...field.options].some((o) => o.value === area)

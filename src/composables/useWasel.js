@@ -1,3 +1,4 @@
+import { merchantSender } from "../services/addressBook.js";
 import ViewHost from "../components/ViewHost.vue";
 import { provide } from "vue";
 import { viewStateKey } from "./useViewState.js";
@@ -459,9 +460,7 @@ export function useWasel(application = currentApplication()) {
             service: "normal",
             collection: "none",
             notes: "",
-            sender: {
-              ...state.S.user,
-            },
+            sender: merchantSender(state.S.user),
             recipient: {
               province: state.S.user.province,
               name: "",
@@ -528,7 +527,9 @@ export function useWasel(application = currentApplication()) {
       d.sender = {
         name: state.S.user.name,
         phone: state.S.user.phone,
-        province: state.S.user.province,
+        province:
+          f.senderProvince || d.sender.province || state.S.user.province,
+        addressId: d.sender.addressId || "",
         phone2: state.S.user.phone2,
         area: f.senderArea,
         address: f.senderAddress,
@@ -1113,18 +1114,12 @@ export function useWasel(application = currentApplication()) {
       const address = state.S.user.addresses?.find(
         (a) => a.id === e.target.value,
       );
-      state.wizard.data.sender =
+      state.wizard.data.sender = merchantSender(
+        state.S.user,
         e.target.value === "new"
-          ? {
-              name: state.S.user.name,
-              phone: state.S.user.phone,
-              province: state.S.user.province,
-            }
-          : {
-              ...state.S.user,
-              ...address,
-              addressId: address?.id || "",
-            };
+          ? { province: state.S.user.province }
+          : address,
+      );
       state.wizard.data.pickupChoice = e.target.value;
       ui.formRevision++;
       render();
