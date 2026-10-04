@@ -7,18 +7,6 @@ defineProps({ model: { type: Object, required: true } });
 </script>
 <template>
   <div class="form-grid">
-    <template v-if="model.d.kind === 'free'"
-      ><FormSelect
-        :model="{
-          name: 'collection',
-          label: 'نوع التوصيل الحر',
-          values: {
-            none: 'توصيل فقط دون تحصيل',
-          },
-          value: model.d.collection,
-        }"
-    /></template>
-
     <FormInput
       v-if="model.d.kind !== 'free'"
       :model="{

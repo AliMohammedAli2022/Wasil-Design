@@ -5,22 +5,21 @@ import ViewContent from "../../components/ViewContent.vue";
 defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
 import { useViewState } from "../../composables/useViewState.js";
-const { ui, state } = useViewState();
+const { ui } = useViewState();
 </script>
 <template>
   <section class="surface wizard">
+    <h2 v-if="model.d.kind === 'free'" class="free-order-title">
+      {{ model.state.wizard.id ? "تعديل الطلب" : "طلب توصيل حر" }}
+    </h2>
     <WizardSteps
       :model="{
         step: model.state.wizard.step,
         labels: ['الشحنة', 'المرسل', 'المستلم', 'المراجعة'],
       }"
     />
-    <h2 style="margin-bottom: 16px">
-      <template v-if="model.state.wizard.id">تعديل الطلب</template>
-      <template v-else
-        ><template v-if="model.d.kind === 'free'">طلب توصيل حر</template>
-        <template v-else>إنشاء طلب جديد</template></template
-      >
+    <h2 v-if="model.d.kind !== 'free'" style="margin-bottom: 16px">
+      {{ model.state.wizard.id ? "تعديل الطلب" : "إنشاء طلب جديد" }}
     </h2>
     <form id="order-form" class="form-stack">
       <ViewContent :content="model.fields" />
@@ -74,3 +73,9 @@ const { ui, state } = useViewState();
     </form>
   </section>
 </template>
+<style scoped>
+.free-order-title {
+  margin-bottom: 24px;
+  text-align: center;
+}
+</style>
