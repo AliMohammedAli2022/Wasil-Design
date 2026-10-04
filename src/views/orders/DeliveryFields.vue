@@ -18,7 +18,7 @@ defineProps({ model: { type: Object, required: true } });
       name="proof"
       minlength="8"
       :required="true"
-      placeholder="وصف التأكيد في البيئة التجريبية"
+      placeholder="اسم المستلم وتفاصيل تأكيد التسليم"
     ></textarea>
   </label>
   <p class="file-help">

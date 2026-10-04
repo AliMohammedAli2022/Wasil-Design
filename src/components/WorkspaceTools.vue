@@ -33,7 +33,7 @@ async function chooseOutlet(id) {
 const adminPages = {
   settings: "ضبط الخدمات والعمولات",
   profiles: "مراجعة تعديلات الحسابات",
-  topup: "منفذ الشحن — محاكاة",
+  topup: "منفذ الشحن",
   support: "تذاكر الدعم",
   reviews: "مراجعة الإلغاءات والتعذر",
   outlets: "إضافة وتمويل منفذ",
@@ -541,7 +541,7 @@ const settingsLabels = {
       <p class="file-help">
         هذا الاختيار لحساب المسافات فقط؛ لا يغيّر عنوان حسابك.
       </p>
-      <p>منافذ تجريبية للمعاينة؛ لا تنفذ دفعاً أو شحناً حقيقياً.</p>
+      <p>اختر منفذ الشحن المناسب حسب موقعك.</p>
       <article v-for="o in nearbyOutlets" :key="o.id">
         <h3>{{ o.name }}</h3>
         <p>{{ o.address }}</p>
@@ -751,7 +751,7 @@ const settingsLabels = {
               type="number"
               min="1"
               required /></label
-          ><button class="primary-button" :disabled="busy">شحن تجريبي</button>
+          ><button class="primary-button" :disabled="busy">شحن المحفظة</button>
         </form>
       </section>
       <section
@@ -881,7 +881,7 @@ const settingsLabels = {
                 type="number"
                 min="1"
                 required /></label
-            ><button :disabled="busy">إضافة رصيد تجريبي</button>
+            ><button :disabled="busy">إضافة رصيد</button>
           </form>
         </article>
         <a href="?portal=outlet" target="_blank" rel="noopener"

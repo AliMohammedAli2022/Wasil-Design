@@ -15,10 +15,6 @@ defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
 </script>
 <template>
-  <template v-if="model.o.demo"
-    ><p class="status-note">طلب تجريبي محلي؛ لا يمثل شحنة حقيقية.</p></template
-  >
-
   <span
     :class="'chip ' + orderStatus(model.o)"
     :title="statusDescription(model.o)"

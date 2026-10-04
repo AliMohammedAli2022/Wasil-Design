@@ -430,3 +430,64 @@ test("merchant and free registration require the demo code before creating an ac
     await assert.rejects(reopened("/api/register", { ...registration, verificationCode: "111111" }), /مسجل/);
   }
 });
+
+test("sample accounts, orders and outlets use realistic names and descriptions without placeholder labels", async () => {
+  const { createDemoData } = await import("./src/services/demoData.js");
+  const data = createDemoData();
+  assert.doesNotMatch(JSON.stringify(data), /تجريب|وهمي|للفحص/);
+  for (const user of data.users) {
+    assert.ok(user.name.split(" ").length >= 3);
+    assert.match(user.phone, /^[0-9]{11}$/);
+    assert.ok(user.address.length > 12);
+  }
+  for (const order of data.orders) {
+    assert.ok(order.recipient.name.split(" ").length >= 3);
+    assert.match(order.recipient.phone, /^[0-9]{11}$/);
+    assert.ok(order.recipient.address.length > 15);
+  }
+  const { api } = await setup();
+  for (const role of ["merchant", "free", "courier"]) {
+    await api("/api/login", { role });
+    assert.doesNotMatch(JSON.stringify(await api("/api/state")), /تجريب|وهمي|للفحص/);
+  }
+});
+
+test("existing sample content upgrades once while preserving user edits, balances and order progress", async () => {
+  const { createDemoData } = await import("./src/services/demoData.js");
+  const { api, storage, key, createDemoApi } = await setup();
+  const old = createDemoData();
+  delete old.sampleContentVersion;
+  old.users.find(user => user.id === "FREE-DEMO").name = "حساب التوصيل الحر التجريبي";
+  old.users.find(user => user.id === "COU-DEMO-01").address = "بغداد، الكرادة — عنوان تجريبي";
+  const order = old.orders[0];
+  order.recipient.name = "مستلم تجريبي 1";
+  order.notes = "ملابس جاهزة — الاتصال قبل الوصول (بيانات وهمية للفحص)";
+  order.sender.address = "عنوان معدّل — دار 52";
+  order.amount = 76543;
+  order.status = "retry";
+  order.history[0].text = "بيانات تجريبية — محفوظ";
+  order.history.push({ at: "2026-10-04T00:00:00Z", text: "طلب الزبون التأجيل", status: "retry" });
+  old.ledger[0].reason = "إضافة تجريبية";
+  old.ledger[0].amount = 123456;
+  old.notifications[0].text = "أهلاً بك في حساب التاجر التجريبي";
+  old.outlets = [{ id: "OUT-DEMO", name: "منفذ تجريبي — الكرادة", address: "الكرادة داخل", balance: 456 }];
+  storage.setItem(key, JSON.stringify(old));
+  const upgraded = createDemoApi(storage);
+  await upgraded("/api/login", { role: "merchant" });
+  const state = await upgraded("/api/state");
+  assert.doesNotMatch(JSON.stringify(state), /تجريب|وهمي/);
+  const record = state.orders.find(item => item.id === order.id);
+  assert.equal(record.recipient.name, "أحمد سامر خليل");
+  assert.equal(record.sender.address, "عنوان معدّل — دار 52");
+  assert.equal(record.amount, 76543);
+  assert.equal(record.status, "retry");
+  assert.equal(record.history[1].text, "طلب الزبون التأجيل");
+  assert.equal(state.ledger[0].amount, 123456);
+  assert.equal(state.outlets.find(outlet => outlet.id === "OUT-DEMO").balance, 456);
+  const saved = JSON.parse(storage.getItem(key));
+  saved.orders[0].recipient.name = "اسم عدّله المستخدم";
+  storage.setItem(key, JSON.stringify(saved));
+  const reopened = createDemoApi(storage);
+  await reopened("/api/login", { role: "merchant" });
+  assert.equal((await reopened("/api/state")).orders.find(item => item.id === order.id).recipient.name, "اسم عدّله المستخدم");
+});

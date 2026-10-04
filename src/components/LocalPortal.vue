@@ -23,7 +23,7 @@ onMounted(async () => {
 <template>
   <main class="tracking-page">
     <h1>واصل — {{ portal === "outlet" ? "منفذ الشحن" : "الإدارة" }}</h1>
-    <p>واجهة محاكاة محلية. لا تنفذ تحويلات مالية حقيقية.</p>
+    <p>عمليات هذه الواجهة محلية ولا تنفذ تحويلات مالية فعلية.</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <WorkspaceTools
       v-if="snapshot"

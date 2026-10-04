@@ -4,6 +4,7 @@ import {
   workflowEventLabels,
 } from "./orderStatuses.js";
 import { removeDeviceDraftStorage } from "./storageMigrations.js";
+import { refreshSampleContent } from "./sampleContent.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
@@ -97,7 +98,7 @@ export function createDemoApi(
   data.outlets ??= [
     {
       id: "OUT-DEMO",
-      name: "منفذ تجريبي — الكرادة",
+      name: "مكتب دجلة — الكرادة",
       phone: "07700000003",
       location: { lat: 33.302, lng: 44.432 },
       address: "بغداد، الكرادة",
@@ -108,7 +109,7 @@ export function createDemoApi(
     const samples = [
       {
         id: "OUT-DEMO-MANSOUR",
-        name: "منفذ المنصور — تجريبي",
+        name: "مكتب الربيع — المنصور",
         address: "بغداد، المنصور — قرب مول المنصور",
         phone: "07700000004",
         location: { lat: 33.314, lng: 44.354 },
@@ -116,7 +117,7 @@ export function createDemoApi(
       },
       {
         id: "OUT-DEMO-ZAYOUNA",
-        name: "منفذ زيونة — تجريبي",
+        name: "مكتب النخيل — زيونة",
         address: "بغداد، زيونة — شارع الربيعي",
         phone: "07700000005",
         location: { lat: 33.324, lng: 44.465 },
@@ -124,7 +125,7 @@ export function createDemoApi(
       },
       {
         id: "OUT-DEMO-ADHAMIYA",
-        name: "منفذ الأعظمية — تجريبي",
+        name: "مكتب الندى — الأعظمية",
         address: "بغداد، الأعظمية — شارع الضباط",
         phone: "07700000006",
         location: { lat: 33.369, lng: 44.383 },
@@ -137,6 +138,7 @@ export function createDemoApi(
     }
     data.expandedDemoOutlets = true;
   }
+  refreshSampleContent(data);
   for (const u of data.users) {
     u.addresses ??= [];
     u.customers ??= [];
@@ -1195,7 +1197,7 @@ export function createDemoApi(
         const demoAccount = data.users.find(
           (user) => user.id === (p.role === "free" ? "FREE-DEMO" : "MER-DEMO"),
         );
-        must(demoAccount, "الحساب التجريبي غير متوفر");
+        must(demoAccount, "الحساب غير متوفر");
         currentId = demoAccount.id;
         data.lastByRole[p.role] = demoAccount.id;
         persist();
@@ -1209,7 +1211,7 @@ export function createDemoApi(
           (u) => accountType(u) === p.role && u.id === data.lastByRole[p.role],
         ) ||
         data.users.find((u) => accountType(u) === p.role);
-      must(u, "الحساب التجريبي غير متوفر");
+      must(u, "الحساب غير متوفر");
       currentId = u.id;
       data.lastByRole[p.role] = u.id;
       persist();
@@ -1448,10 +1450,10 @@ export function createDemoApi(
           id: id("W"),
           owner: target.id,
           amount: Number(p.amount),
-          reason: "شحن تجريبي من " + outlet.name,
+          reason: "شحن رصيد من " + outlet.name,
           at: now(),
         });
-        notify(target.id, "تم شحن المحفظة تجريبياً");
+        notify(target.id, "تم شحن المحفظة");
       } else if (p.action === "outlet") {
         must(p.name && supportedPhone(p.phone), "اسم المنفذ والهاتف مطلوبان");
         data.outlets.push({
@@ -1497,7 +1499,7 @@ export function createDemoApi(
               id: id("W"),
               owner: target.id,
               amount: -data.config.subscription,
-              reason: "اشتراك شهري تجريبي",
+              reason: "اشتراك شهري",
               period,
               kind: "subscription",
               at: now(),

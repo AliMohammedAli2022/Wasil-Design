@@ -5,10 +5,7 @@ defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
 </script>
 <template>
-  <p class="muted">
-    هذه معاينة في النسخة التجريبية. تغيير كلمة المرور الفعلي يتفعّل عند ربط
-    الحسابات بالخادم.
-  </p>
+  <p class="muted">تغيير كلمة المرور يتفعّل عند ربط الحسابات بالخادم.</p>
   <form id="password-change-form" class="form-stack">
     <FormInput
       :model="{

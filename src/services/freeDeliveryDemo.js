@@ -6,7 +6,7 @@ export function addFreeDeliveryDemo(data, sample = data) {
     ...structuredClone(merchant),
     id: "FREE-DEMO",
     accountType: "free",
-    name: "حساب التوصيل الحر التجريبي",
+    name: "مكتب الرافدين للتوصيل",
     phone: "07700000007",
     walletId: "W-FREE-DEMO",
   };
@@ -37,7 +37,7 @@ export function addFreeDeliveryDemo(data, sample = data) {
       {
         id: "N-FREE-DEMO",
         owner: user.id,
-        text: "أهلاً بك في حساب التوصيل الحر التجريبي",
+        text: "أهلاً بك في حساب التوصيل الحر",
         at: orders[0].createdAt,
       },
     ],
