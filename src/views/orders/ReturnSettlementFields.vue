@@ -5,7 +5,7 @@ defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
 </script>
 <template>
-  <p>
+  <p v-if="model.o.kind !== 'free'">
     {{ "قيمة البضاعة الواجب استردادها: " }}
     {{
       model.money(
@@ -28,7 +28,9 @@ defineProps({ model: { type: Object, required: true } });
   <ViewContent
     :content="
       model.confirm(
-        'استرددت قيمة المرتجع وسُويت الأجور. هذا تأكيد محلي لا ينفذ تحويلاً.',
+        model.o.kind === 'free'
+          ? 'تم تسليم الشحنة المرتجعة وتسوية الأجور.'
+          : 'استرددت قيمة المرتجع وسُويت الأجور. هذا تأكيد محلي لا ينفذ تحويلاً.',
       )
     "
   />

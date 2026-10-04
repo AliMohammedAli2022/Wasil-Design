@@ -57,14 +57,19 @@ watch(province, () => {
       autocomplete="tel"
   /></label>
   <label
-    >اسم الزبون<input
+    >{{ model.d.kind === "free" ? "اسم المستلم" : "اسم الزبون"
+    }}<input
       v-model.trim="customerName"
       name="name"
       required
       maxlength="80"
       autocomplete="off"
       list="recipient-names"
-      placeholder="اكتب اسم الزبون أو اختر اسماً محفوظاً"
+      :placeholder="
+        model.d.kind === 'free'
+          ? 'اكتب اسم المستلم أو اختر اسماً محفوظاً'
+          : 'اكتب اسم الزبون أو اختر اسماً محفوظاً'
+      "
   /></label>
   <label
     >رقم موبايل إضافي (اختياري)<input
@@ -121,22 +126,25 @@ watch(province, () => {
         placeholder="44.430000"
     /></label>
   </div>
-  <p class="file-help">الصق إحداثيات الزبون أو حدد موقعه على الخريطة.</p>
+  <p class="file-help">
+    الصق إحداثيات {{ model.d.kind === "free" ? "المستلم" : "الزبون" }} أو حدد
+    موقعه على الخريطة.
+  </p>
   <LocationPanel
     :location="location"
     editable
     :show-gps="false"
     :infer-area="false"
     :show-external-actions="false"
-    name="موقع الزبون"
+    :name="model.d.kind === 'free' ? 'موقع المستلم' : 'موقع الزبون'"
     @update:location="
       latitude = $event.lat;
       longitude = $event.lng;
     "
   />
   <p class="file-help">
-    تُحفظ بيانات الزبون وموقعه تلقائياً مع الطلب، مع الاحتفاظ ببقية الأسماء
-    والمواقع لنفس الرقم.
+    تُحفظ بيانات {{ model.d.kind === "free" ? "المستلم" : "الزبون" }} وموقعه
+    تلقائياً مع الطلب، مع الاحتفاظ ببقية الأسماء والمواقع لنفس الرقم.
   </p>
   <label
     >ملاحظات التوصيل<textarea

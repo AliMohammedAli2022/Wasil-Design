@@ -89,7 +89,7 @@ test("creation remains sequential across accounts, tabs, reloads and deletion", 
   await merchant("/api/login", { role: "merchant" });
   await free("/api/login", { role: "free" });
   const first = await merchant("/api/orders", template);
-  const second = await free("/api/orders", template);
+  const second = await free("/api/orders", { ...template, amount: 0 });
   assert.equal(first.id, "829");
   assert.equal(second.id, "830");
   assert.equal(first.merchant, "MER-DEMO");
@@ -100,7 +100,10 @@ test("creation remains sequential across accounts, tabs, reloads and deletion", 
   const restored = createDemoApi(storage);
   await restored("/api/login", { role: "merchant" });
   assert.equal((await restored("/api/orders", template)).id, "831");
-  assert.equal((await free("/api/orders", template)).id, "832");
+  assert.equal(
+    (await free("/api/orders", { ...template, amount: 0 })).id,
+    "832",
+  );
 });
 
 test("legacy API actions and tracking snapshots resolve sample order numbers", async () => {

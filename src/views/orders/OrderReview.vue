@@ -45,6 +45,7 @@ defineProps({ model: { type: Object, required: true } });
     </p>
   </div>
   <DetailRow
+    v-if="model.d.kind !== 'free'"
     :model="{
       label: 'قيمة البضاعة',
       value: model.money(model.d.amount) + ' د.ع',
@@ -56,7 +57,13 @@ defineProps({ model: { type: Object, required: true } });
       value:
         model.money(model.d.fee) +
         ' د.ع — على ' +
-        (model.d.feePayer === 'merchant' ? 'التاجر' : 'الزبون'),
+        (model.d.feePayer === 'merchant'
+          ? model.d.kind === 'free'
+            ? 'المرسل'
+            : 'التاجر'
+          : model.d.kind === 'free'
+            ? 'المستلم'
+            : 'الزبون'),
     }"
   />
   <DetailRow
@@ -67,7 +74,8 @@ defineProps({ model: { type: Object, required: true } });
   />
   <DetailRow
     :model="{
-      label: 'المطلوب من الزبون',
+      label:
+        model.d.kind === 'free' ? 'المطلوب من المستلم' : 'المطلوب من الزبون',
       value: model.money(model.customerDue(model.d)) + ' د.ع',
     }"
   />
@@ -84,7 +92,5 @@ defineProps({ model: { type: Object, required: true } });
     </p></template
   >
 
-  <p class="muted">
-    النشر يجعل الطلب متاحاً للمندوبين المناسبين داخل هذه المنظومة المحلية.
-  </p>
+  <p class="muted">النشر يجعل الطلب متاحاً للمندوبين المتاحين</p>
 </template>

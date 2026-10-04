@@ -234,6 +234,43 @@ test("order wizard retains all four steps and form constraints", async () => {
     }
   }
 });
+test("free order forms use profile sender, address book and recipient wording without goods value", async () => {
+  const { createDemoData } = await import("./src/services/demoData.js");
+  const { merchantSender } = await import("./src/services/addressBook.js");
+  const sample = createDemoData();
+  const user = sample.users.find((user) => user.id === "FREE-DEMO");
+  const data = {
+    ...sample.orders.find((order) => order.merchant === user.id),
+    sender: merchantSender(user),
+  };
+  for (let step = 0; step < 4; step++) {
+    const { html } = await renderPage("OrderWizard", (app) => {
+      app.state.S.user = user;
+      app.state.wizard = { step, data };
+    });
+    assert.doesNotMatch(
+      html,
+      /name="amount"|قيمة البضاعة|اسم النشاط|اسم التاجر/,
+    );
+    if (step === 1) {
+      assert.match(html, /الاسم/);
+      assert.match(html, /مصطفى سعد كريم/);
+      assert.match(html, /name="pickupAddress"/);
+      assert.match(html, /name="senderAddressName"/);
+      assert.match(html, /name="latitude"/);
+      assert.doesNotMatch(html, /name="photo"|name="senderName"/);
+    }
+    if (step === 2) {
+      assert.match(html, /اسم المستلم/);
+      assert.doesNotMatch(html, /اسم الزبون/);
+    }
+    if (step === 3) {
+      assert.match(html, /النشر يجعل الطلب متاحاً للمندوبين المتاحين/);
+      assert.doesNotMatch(html, /المنظومة المحلية/);
+    }
+  }
+});
+
 test("saved pickup and recipient choices fill editable locations and preserve notes", async () => {
   const address = {
     id: "ADR-TEST",

@@ -4,6 +4,7 @@ import { BASE_ORDER_COUNT, SAMPLE_ORDER_COUNT } from "./orderNumbers.js";
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { statusLabel } from "./orderStatuses.js";
 import { populatePreviewAccounts } from "./previewContent.js";
+import { normalizeFreeDeliveryAccounts } from "./freeDelivery.js";
 export { statuses } from "./orderStatuses.js";
 const workflowStages = [
   "draft",
@@ -372,6 +373,7 @@ export function createDemoData() {
   };
   addFreeDeliveryDemo(data);
   populatePreviewAccounts(data);
+  normalizeFreeDeliveryAccounts(data);
   return data;
 }
 export const settings = {

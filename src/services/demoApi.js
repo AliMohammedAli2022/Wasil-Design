@@ -12,6 +12,7 @@ import {
 import { removeDeviceDraftStorage } from "./storageMigrations.js";
 import { refreshSampleContent } from "./sampleContent.js";
 import { populatePreviewAccounts } from "./previewContent.js";
+import { normalizeFreeDeliveryAccounts } from "./freeDelivery.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
@@ -153,6 +154,7 @@ export function createDemoApi(
   }
   refreshSampleContent(data);
   populatePreviewAccounts(data, createDemoData());
+  normalizeFreeDeliveryAccounts(data);
   for (const u of data.users) {
     u.addresses ??= [];
     u.customers ??= [];
@@ -584,6 +586,10 @@ export function createDemoApi(
     if (a === "edit") {
       merchant();
       requireState(BEFORE);
+      if (accountType(u) === "free") {
+        p.kind = "free";
+        p.sender = merchantSender(u, p.sender ?? o.sender);
+      }
       validateOrder({ ...o, ...p });
       pickupAddress(u, p.sender ?? o.sender);
       const fields = [
@@ -1194,6 +1200,7 @@ export function createDemoApi(
           );
           data = latest;
           migrateOrderNumbers(data);
+          normalizeFreeDeliveryAccounts(data);
           data.config = { ...defaults, ...data.config };
           for (const o of data.orders)
             if (photos.has(o.id)) o.photo = photos.get(o.id);
@@ -1292,6 +1299,7 @@ export function createDemoApi(
       };
       data.users.push(u);
       populatePreviewAccounts(data, createDemoData());
+      normalizeFreeDeliveryAccounts(data);
       data.lastByRole[accountType(u)] = uid;
       persist();
       return { user: copy(u) };
@@ -1616,6 +1624,12 @@ export function createDemoApi(
     if (url === "/api/orders") {
       must(u.role === "merchant", "للتاجر فقط");
       must(online(), "اتصل بالإنترنت لحفظ أو نشر الطلب");
+      if (accountType(u) === "free") {
+        p.kind = "free";
+        p.amount ??= 0;
+        p.collection ??= "none";
+        p.sender = merchantSender(u, p.sender);
+      }
       validateOrder(p);
       const sender = p.kind === "free" ? p.sender : merchantSender(u, p.sender);
       pickupAddress(u, sender);

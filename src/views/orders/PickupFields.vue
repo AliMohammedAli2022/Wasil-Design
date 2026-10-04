@@ -5,7 +5,7 @@ defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
 </script>
 <template>
-  <p class="status-note">
+  <p v-if="model.o.kind !== 'free'" class="status-note">
     {{ "المطلوب دفعه للمرسل: " }}
     {{ model.money(model.o.kind === "free" ? 0 : model.o.amount) }}
     {{ " د.ع" }}
@@ -15,11 +15,19 @@ defineProps({ model: { type: Object, required: true } });
     والتغليف والمطابقة وعالجت أي اختلاف.</label
   >
   <label class="checkbox"
-    ><input type="checkbox" name="paid" :required="true" /> دفعت القيمة المستحقة
-    وتسلمت الشحنة.</label
+    ><input type="checkbox" name="paid" :required="true" />
+    {{
+      model.o.kind === "free"
+        ? "تسلمت الشحنة من المرسل."
+        : "دفعت القيمة المستحقة وتسلمت الشحنة."
+    }}</label
   >
   <ScanCodeField
     :key="`${model.o.id}-pickup`"
-    label="رمز الاستلام من التاجر (أو أدخله يدوياً)"
+    :label="
+      model.o.kind === 'free'
+        ? 'رمز الاستلام من المرسل (أو أدخله يدوياً)'
+        : 'رمز الاستلام من التاجر (أو أدخله يدوياً)'
+    "
   ></ScanCodeField>
 </template>

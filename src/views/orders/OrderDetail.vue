@@ -68,6 +68,7 @@ defineProps({ model: { type: Object, required: true } });
     }"
   />
   <DetailRow
+    v-if="model.o.kind !== 'free'"
     :model="{
       label: 'كلفة البضاعة',
       value: model.money(model.o.amount) + ' د.ع',
@@ -79,7 +80,13 @@ defineProps({ model: { type: Object, required: true } });
       value:
         model.money(model.o.fee) +
         ' د.ع — على ' +
-        (model.o.feePayer === 'merchant' ? 'التاجر' : 'الزبون'),
+        (model.o.feePayer === 'merchant'
+          ? model.o.kind === 'free'
+            ? 'المرسل'
+            : 'التاجر'
+          : model.o.kind === 'free'
+            ? 'المستلم'
+            : 'الزبون'),
     }"
   />
   <DetailRow
@@ -90,7 +97,8 @@ defineProps({ model: { type: Object, required: true } });
   />
   <DetailRow
     :model="{
-      label: 'المطلوب من الزبون',
+      label:
+        model.o.kind === 'free' ? 'المطلوب من المستلم' : 'المطلوب من الزبون',
       value: model.money(model.customerDue(model.o)) + ' د.ع',
     }"
   />
@@ -140,7 +148,12 @@ defineProps({ model: { type: Object, required: true } });
       <h3>رمز الاستلام</h3>
       <OrderQr :code="model.o.handoverCode" label="رمز الاستلام"></OrderQr>
       <p class="code">{{ model.o.handoverCode }}</p>
-      <p class="muted">أعطه للمندوب بعد الفحص واستلام قيمة البضاعة فقط.</p>
+      <p v-if="model.o.kind === 'free'" class="muted">
+        أعطه للمندوب بعد فحص الشحنة واستلامها.
+      </p>
+      <p v-else class="muted">
+        أعطه للمندوب بعد الفحص واستلام قيمة البضاعة فقط.
+      </p>
     </div></template
   >
 
@@ -173,9 +186,10 @@ defineProps({ model: { type: Object, required: true } });
         label: 'الجزء المقترح',
         value:
           model.o.partial.count +
-          ' قطع / ' +
-          model.money(model.o.partial.amount) +
-          ' د.ع',
+          ' قطع' +
+          (model.o.kind === 'free'
+            ? ''
+            : ' / ' + model.money(model.o.partial.amount) + ' د.ع'),
       }"
   /></template>
 

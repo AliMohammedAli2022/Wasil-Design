@@ -7,9 +7,10 @@ defineProps({ model: { type: Object, required: true } });
   <p>
     {{ "أجرة على المرسل: " }}
     {{ model.money(model.o.feePayer === "merchant" ? model.o.fee : 0) }}
-    {{ " د.ع. قيمة تحصيل تُعاد للمرسل: " }}
-    {{ model.money(model.o.kind === "free" ? model.o.amount : 0) }}
     {{ " د.ع." }}
+    <template v-if="model.o.kind !== 'free'">
+      قيمة تحصيل تُعاد للمرسل: {{ model.money(0) }} د.ع.
+    </template>
   </p>
   <ViewContent
     :content="model.confirm('اكتملت تسوية هذه المبالغ مع المرسل.')"

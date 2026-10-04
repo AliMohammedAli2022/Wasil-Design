@@ -5,7 +5,9 @@ defineProps({ model: { type: Object, required: true } });
 </script>
 <template>
   <p class="status-note blue">
-    {{ "المطلوب من الزبون: " }}
+    {{
+      model.o.kind === "free" ? "المطلوب من المستلم: " : "المطلوب من الزبون: "
+    }}
     {{ model.money(model.customerDue(model.o)) }}
     {{ " د.ع" }}
   </p>

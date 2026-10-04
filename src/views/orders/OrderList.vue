@@ -81,7 +81,7 @@ defineProps({ model: { type: Object, required: true } });
           >
         </div>
         <div class="money-grid">
-          <div>
+          <div v-if="o.kind !== 'free'">
             <span>البضاعة</span>
             <strong>{{ model.money(o.amount) }} {{ " د.ع" }}</strong>
           </div>
@@ -100,8 +100,12 @@ defineProps({ model: { type: Object, required: true } });
             {{ " قطع • " }}
             {{ o.weight }}
             {{ " كغم • الأجرة على " }}
-            <template v-if="o.feePayer === 'merchant'">التاجر</template>
-            <template v-else>الزبون</template>
+            <template v-if="o.feePayer === 'merchant'">{{
+              o.kind === "free" ? "المرسل" : "التاجر"
+            }}</template>
+            <template v-else>{{
+              o.kind === "free" ? "المستلم" : "الزبون"
+            }}</template>
             {{ " " }}
             <template v-if="o.settled">• مسوّى</template>
             <template v-else></template

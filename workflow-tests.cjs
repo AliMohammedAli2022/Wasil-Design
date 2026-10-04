@@ -632,7 +632,7 @@ test("only the assigned courier can finish a settled order and completion is fin
   for (const role of ["merchant", "free"]) {
     const t = await setup();
     await t.login(role);
-    const o = await t.create();
+    const o = await t.create(role === "free" ? { amount: 0 } : {});
     await t.login("courier");
     await t.act(o, "reserve");
     await t.act(o, "depart");

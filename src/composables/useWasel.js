@@ -294,7 +294,10 @@ export function useWasel(application = currentApplication()) {
     ui.dialogContent = null;
   }
   function customerDue(o) {
-    return o.amount + (o.feePayer === "customer" ? o.fee : 0);
+    return (
+      (o.kind === "free" ? 0 : o.amount) +
+      (o.feePayer === "customer" ? o.fee : 0)
+    );
   }
   async function refresh(draw = true) {
     try {
@@ -425,6 +428,7 @@ export function useWasel(application = currentApplication()) {
     ui.revision++;
   }
   function startOrder(kind = "merchant", old = null) {
+    if (accountType(state.S.user) === "free") kind = "free";
     state.wizard = {
       step: 0,
       id: old?.id,
@@ -498,18 +502,6 @@ export function useWasel(application = currentApplication()) {
         throw Error("أجرة الراجع لا تتجاوز أجرة التوصيل");
       if (d.nature === "cold" && d.vehicle !== "refrigerated")
         throw Error("الشحنة المبردة تحتاج سيارة مبردة");
-    } else if (state.wizard.step === 1 && d.kind === "free") {
-      d.sender = {
-        name: f.senderName,
-        phone: f.senderPhone,
-        address: f.senderAddress,
-        area: f.senderArea,
-        province: state.S.user.province,
-        location: {
-          lat: Number(f.lat),
-          lng: Number(f.lng),
-        },
-      };
     } else if (state.wizard.step === 1) {
       d.sender = {
         name: state.S.user.name,
@@ -519,7 +511,9 @@ export function useWasel(application = currentApplication()) {
         addressId: d.sender.addressId || "",
         addressName: f.senderAddressName,
         phone2: f.senderPhone2 || "",
-        businessName: state.S.user.businessName,
+        ...(d.kind === "free"
+          ? {}
+          : { businessName: state.S.user.businessName }),
         area: f.senderArea,
         address: f.senderAddress,
         location: {
@@ -903,10 +897,6 @@ export function useWasel(application = currentApplication()) {
         reviewCourierRegistration();
       else if (form.id === "order-form") {
         gatherOrder(form);
-        if (state.wizard.step === 1 && state.wizard.data.kind === "free") {
-          const photo = await imageData(form.elements.photo.files[0]);
-          if (photo) state.wizard.data.photo = photo;
-        }
         state.wizard.step++;
         ui.formRevision++;
         render();

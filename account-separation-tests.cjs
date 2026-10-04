@@ -150,6 +150,74 @@ test("preview migration preserves edits and does not restore deleted sample cont
   assert.deepEqual(saved, before);
 });
 
+test("free orders use profile identity and saved addresses without goods collection", async () => {
+  const { storage, key, createDemoApi } = await workspace();
+  const { createDemoData } = await import("./src/services/demoData.js");
+  const data = createDemoData();
+  const oldFree = data.users.find((user) => user.id === "FREE-DEMO");
+  oldFree.businessName = "اسم نشاط سابق";
+  const oldOrder = data.orders.find((order) => order.merchant === oldFree.id);
+  Object.assign(oldOrder, { kind: "merchant", amount: 75000 });
+  storage.setItem(key, JSON.stringify(data));
+  const api = createDemoApi(storage);
+  await api("/api/login", { role: "free" });
+  const state = await api("/api/state");
+  assert.equal(state.user.businessName, undefined);
+  assert.ok(
+    state.orders.every(
+      (order) =>
+        order.kind === "free" &&
+        order.amount === 0 &&
+        order.collection === "none",
+    ),
+  );
+  const place = state.user.addresses[1];
+  const template = state.orders.find((order) => order.status === "draft");
+  const payload = {
+    ...template,
+    kind: "merchant",
+    sender: {
+      ...template.sender,
+      ...place,
+      addressId: place.id,
+      addressName: place.name,
+      name: "اسم آخر",
+      phone: "07812345678",
+      businessName: "نشاط آخر",
+    },
+  };
+  await assert.rejects(
+    api("/api/orders", { ...payload, amount: 1000 }),
+    /بدون دفع أو تحصيل/,
+  );
+  await assert.rejects(
+    api("/api/orders", { ...payload, collection: "collect" }),
+    /بدون دفع أو تحصيل/,
+  );
+  const saved = await api("/api/orders", payload);
+  assert.equal(saved.kind, "free");
+  assert.equal(saved.amount, 0);
+  assert.equal(saved.sender.name, state.user.name);
+  assert.equal(saved.sender.phone, state.user.phone);
+  assert.equal(saved.sender.businessName, undefined);
+  assert.equal(saved.sender.addressId, place.id);
+  assert.deepEqual(saved.sender.location, place.location);
+  await assert.rejects(
+    api(`/api/orders/${saved.id}/action`, {
+      action: "edit",
+      kind: "merchant",
+      amount: 5000,
+    }),
+    /بدون دفع أو تحصيل/,
+  );
+  const edited = await api(`/api/orders/${saved.id}/action`, {
+    action: "edit",
+    sender: payload.sender,
+  });
+  assert.equal(edited.sender.name, state.user.name);
+  assert.equal(edited.sender.businessName, undefined);
+});
+
 test("same phone can register separate merchant and free identities and cannot cross application entry points", async () => {
   const { storage, createDemoApi } = await workspace();
   const main = createDemoApi(storage, ["merchant", "free"]);

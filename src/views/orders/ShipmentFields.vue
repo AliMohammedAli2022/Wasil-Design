@@ -20,13 +20,13 @@ defineProps({ model: { type: Object, required: true } });
     /></template>
 
     <FormInput
+      v-if="model.d.kind !== 'free'"
       :model="{
         name: 'amount',
         label: 'قيمة البضاعة (د.ع)',
-        value: model.d.kind === 'free' ? 0 : model.d.amount,
+        value: model.d.amount,
         attrs:
-          'type=&quot;number&quot; min=&quot;0&quot; max=&quot;100000000&quot; required' +
-          (model.d.kind === 'free' ? ' readonly' : ''),
+          'type=&quot;number&quot; min=&quot;0&quot; max=&quot;100000000&quot; required',
       }"
     />
     <FormInput
@@ -157,8 +157,8 @@ defineProps({ model: { type: Object, required: true } });
         name: 'feePayer',
         label: 'من يتحمل أجرة التوصيل؟',
         values: {
-          customer: 'الزبون',
-          merchant: 'التاجر / المرسل',
+          customer: model.d.kind === 'free' ? 'المستلم' : 'الزبون',
+          merchant: model.d.kind === 'free' ? 'المرسل' : 'التاجر / المرسل',
         },
         value: model.d.feePayer,
       }"

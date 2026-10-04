@@ -1,3 +1,4 @@
+import { accountType } from "./accounts.js";
 // Address labels never replace the merchant's identity or contact numbers.
 export function merchantSender(user, address) {
   const place = address ?? user;
@@ -8,7 +9,9 @@ export function merchantSender(user, address) {
     name: user.name,
     phone: user.phone,
     phone2: address?.phone2 ?? user.phone2 ?? "",
-    businessName: user.businessName || "",
+    ...(accountType(user) === "free"
+      ? {}
+      : { businessName: user.businessName || "" }),
     province: place.province ?? user.province,
     area: place.area || "",
     address: place.address || "",
