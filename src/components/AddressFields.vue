@@ -74,27 +74,6 @@ const location = computed(() =>
       rows="3"
     ></textarea>
   </label>
-  <div class="address-coordinate-grid">
-    <label
-      >خط العرض<input
-        v-model="form.lat"
-        name="latitude"
-        dir="ltr"
-        inputmode="decimal"
-        placeholder="33.300000"
-    /></label>
-    <label
-      >خط الطول<input
-        v-model="form.lng"
-        name="longitude"
-        dir="ltr"
-        inputmode="decimal"
-        placeholder="44.430000"
-    /></label>
-  </div>
-  <p class="file-help">
-    الصق الإحداثيات، أو اضغط على الخارطة، أو استخدم «تحديد موقعي الحالي».
-  </p>
   <LocationPanel
     :location="location"
     :required="requiredLocation"
@@ -103,18 +82,8 @@ const location = computed(() =>
     name="الموقع على الخارطة"
     :show-external-actions="false"
     @update:location="
-      form.lat = $event.lat;
-      form.lng = $event.lng;
+      form.lat = $event?.lat ?? '';
+      form.lng = $event?.lng ?? '';
     "
   />
 </template>
-<style scoped>
-.address-coordinate-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.address-coordinate-grid label {
-  min-width: 0;
-}
-</style>

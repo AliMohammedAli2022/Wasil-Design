@@ -2,12 +2,12 @@
 import AddressBook from "./AddressBook.vue";
 import CloseIcon from "./CloseIcon.vue";
 import { ref, reactive, computed, onMounted, nextTick } from "vue";
-import LocationMap from "./LocationMap.vue";
 import LocationPanel from "./LocationPanel.vue";
 import { phoneDigits } from "../services/formFields.js";
 import { api } from "../services/api.js";
 import { accountType } from "../services/accounts.js";
-import { areas, nearestArea, distance } from "../services/orderPolicy.js";
+import { areas, distance } from "../services/orderPolicy.js";
+import { addressLocation } from "../services/coordinates.js";
 const props = defineProps({ snapshot: Object, portal: String });
 onMounted(() => {
   if (props.portal) open("admin");
@@ -21,6 +21,7 @@ const panel = ref(),
   admin = ref(null);
 const form = reactive({});
 const addressBookSession = ref(0);
+const locationSession = ref(0);
 const adminPage = ref("");
 const outletPickerOpen = ref(false);
 const outletPickerButton = ref(null);
@@ -133,6 +134,7 @@ const batchOrders = computed(() =>
   ),
 );
 function reset() {
+  locationSession.value++;
   outletPickerOpen.value = false;
   sharedOutlet.value = null;
   for (const k of Object.keys(form)) delete form[k];
@@ -197,26 +199,7 @@ function edit(x) {
   });
 }
 function location() {
-  return form.lat !== "" && form.lng !== ""
-    ? { lat: Number(form.lat), lng: Number(form.lng) }
-    : null;
-}
-async function gps() {
-  await run(
-    () =>
-      new Promise((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(
-          (p) => {
-            form.lat = p.coords.latitude;
-            form.lng = p.coords.longitude;
-            form.area = nearestArea(location()) || form.area;
-            resolve();
-          },
-          () => reject(Error("تعذر تحديد الموقع؛ اختره على الخريطة.")),
-          { timeout: 12000 },
-        ),
-      ),
-  );
+  return addressLocation(form.lat, form.lng);
 }
 async function save() {
   await run(async () => {
@@ -430,11 +413,12 @@ const settingsLabels = {
           >العنوان<input v-model.trim="form.address" required maxlength="200"
         /></label>
         <LocationPanel
+          :key="locationSession"
           :location="location()"
           editable
           @update:location="
-            form.lat = $event.lat;
-            form.lng = $event.lng;
+            form.lat = $event?.lat ?? '';
+            form.lng = $event?.lng ?? '';
           "
         /><button class="primary-button" :disabled="busy">حفظ</button
         ><button type="button" @click="reset">إضافة جديدة</button>
@@ -550,10 +534,14 @@ const settingsLabels = {
       </article></template
     >
     <template v-if="page === 'outlets'"
-      ><LocationMap
+      ><LocationPanel
+        editable
         :groups="nearbyOutlets.map((o) => ({ ...o, count: 1 }))"
-        :movable-location="searchLocation"
-        @location-change="searchLocation = $event" />
+        :location="searchLocation"
+        :show-external-actions="false"
+        :infer-area="false"
+        name="موقع البحث"
+        @update:location="searchLocation = $event" />
       <p class="file-help">
         اسحب العلامة البرتقالية أو اضغط مكانًا بالخريطة لتغيير موقع البحث.
         العلامات الزرقاء هي منافذ الشحن.
@@ -874,12 +862,13 @@ const settingsLabels = {
               required /></label
           ><label>العنوان<input v-model="form.address" required /></label
           ><LocationPanel
+            :key="locationSession"
             :location="location()"
             editable
             required
             @update:location="
-              form.lat = $event.lat;
-              form.lng = $event.lng;
+              form.lat = $event?.lat ?? '';
+              form.lng = $event?.lng ?? '';
             "
           /><button :disabled="busy">إضافة المنفذ محلياً</button>
         </form>

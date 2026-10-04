@@ -108,38 +108,16 @@ watch(province, () => {
       name="landmark"
       maxlength="200"
   /></label>
-  <div class="recipient-coordinates">
-    <label
-      >خط العرض<input
-        v-model="latitude"
-        name="latitude"
-        dir="ltr"
-        inputmode="decimal"
-        placeholder="33.300000"
-    /></label>
-    <label
-      >خط الطول<input
-        v-model="longitude"
-        name="longitude"
-        dir="ltr"
-        inputmode="decimal"
-        placeholder="44.430000"
-    /></label>
-  </div>
-  <p class="file-help">
-    الصق إحداثيات {{ model.d.kind === "free" ? "المستلم" : "الزبون" }} أو حدد
-    موقعه على الخريطة.
-  </p>
   <LocationPanel
+    :key="province"
     :location="location"
     editable
-    :show-gps="false"
     :infer-area="false"
     :show-external-actions="false"
     :name="model.d.kind === 'free' ? 'موقع المستلم' : 'موقع الزبون'"
     @update:location="
-      latitude = $event.lat;
-      longitude = $event.lng;
+      latitude = $event?.lat ?? '';
+      longitude = $event?.lng ?? '';
     "
   />
   <p class="file-help">
@@ -154,13 +132,3 @@ watch(province, () => {
     ></textarea>
   </label>
 </template>
-<style scoped>
-.recipient-coordinates {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.recipient-coordinates label {
-  min-width: 0;
-}
-</style>
