@@ -6,6 +6,7 @@ import LocationMap from "./LocationMap.vue";
 import LocationPanel from "./LocationPanel.vue";
 import { phoneDigits } from "../services/formFields.js";
 import { api } from "../services/api.js";
+import { accountType } from "../services/accounts.js";
 import { areas, nearestArea, distance } from "../services/orderPolicy.js";
 const props = defineProps({ snapshot: Object, portal: String });
 onMounted(() => {
@@ -92,14 +93,14 @@ async function shareOutlet(outlet) {
   }
   if (sharedOutlet.value?.id === outlet.id) sharedOutlet.value = { ...result };
 }
-const labels = {
+const labels = computed(() => ({
   addresses: "عناويني",
-  customers: "زبائني",
+  customers: accountType(u.value) === "free" ? "المستلمين" : "زبائني",
   batch: "الاستلام الجماعي",
   support: "المساعدة والدعم",
   outlets: "منافذ الشحن",
   admin: "معاينة الإدارة المحلية",
-};
+}));
 const nearbyOutlets = computed(() =>
   props.snapshot.outlets
     .slice()
