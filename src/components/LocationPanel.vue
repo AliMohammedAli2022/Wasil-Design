@@ -8,6 +8,8 @@ const props = defineProps({
   location: Object,
   editable: Boolean,
   required: Boolean,
+  showGps: { type: Boolean, default: true },
+  inferArea: { type: Boolean, default: true },
   showHint: { type: Boolean, default: true },
   showExternalActions: { type: Boolean, default: true },
   name: { type: String, default: "الموقع" },
@@ -30,7 +32,7 @@ function choose(value) {
   error.value = "";
   emit("update:location", value);
   const form = root.value?.closest("form");
-  if (form?.elements.namedItem(props.areaField)) {
+  if (props.inferArea && form?.elements.namedItem(props.areaField)) {
     const area = nearestArea(value);
     if (area) {
       const field = form.elements.namedItem(props.areaField);
@@ -92,7 +94,9 @@ function gps() {
         {{
           point
             ? "تم تحديد الموقع. اسحب العلامة لتعديله."
-            : "اضغط على الخريطة لتحديد الموقع أو استخدم موقعك الحالي."
+            : showGps
+              ? "اضغط على الخريطة لتحديد الموقع أو استخدم موقعك الحالي."
+              : "اضغط على الخريطة لتحديد موقع الزبون أو الصق الإحداثيات."
         }}
       </p>
     </template>
@@ -108,7 +112,7 @@ function gps() {
         :name="name"
       />
       <button
-        v-if="editable"
+        v-if="editable && showGps"
         type="button"
         class="location-gps"
         :disabled="busy"

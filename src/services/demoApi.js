@@ -1,3 +1,4 @@
+import { provinces } from "./geography.js";
 import {
   migrateOrderNumbers,
   nextOrderNumber,
@@ -552,8 +553,9 @@ export function createDemoApi(
       "حمولة الشحنة تتجاوز سعة المركبة",
     );
     must(
-      p.recipient.province === user().province,
-      "التوصيل داخل محافظة واحدة فقط",
+      provinces.includes(p.recipient.province) ||
+        p.recipient.province === user().province,
+      "اختر محافظة المستلم",
     );
     if (p.service === "vip")
       must(

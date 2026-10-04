@@ -1,3 +1,4 @@
+import { addressLocation } from "../services/coordinates.js";
 import { provinces } from "../services/geography.js";
 import { merchantSender, pickupAddress } from "../services/addressBook.js";
 import ViewHost from "../components/ViewHost.vue";
@@ -524,23 +525,19 @@ export function useWasel(application = currentApplication()) {
       };
       pickupAddress(state.S.user, d.sender);
     } else if (state.wizard.step === 2) {
+      const point = addressLocation(f.latitude ?? f.lat, f.longitude ?? f.lng);
+      if ((f.latitude || f.longitude || f.lat || f.lng) && !point)
+        throw Error("أدخل خط عرض بين ‎-90 و90 وخط طول بين ‎-180 و180.");
       d.recipient = {
         name: f.name,
         phone: f.phone,
         phone2: f.phone2,
-        province: state.S.user.province,
+        province: f.province || state.S.user.province,
         area: f.area,
         address: d.recipient?.address || "",
         landmark: f.landmark,
-        location:
-          f.lat && f.lng
-            ? {
-                lat: Number(f.lat),
-                lng: Number(f.lng),
-              }
-            : null,
+        location: point,
       };
-      if (!!f.lat !== !!f.lng) throw Error("أدخل خط العرض والطول معاً");
       d.notes = f.notes;
       d.saveCustomer = true;
       d.recipient.area = f.area === "other" ? f.otherArea : f.area;

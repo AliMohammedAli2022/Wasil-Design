@@ -33,7 +33,8 @@ export const distance = (a, b) => {
 export const unresolved = (o) =>
   !CLOSED.includes(o.status) &&
   !(o.settled && ["delivered", "returned"].includes(o.status));
-export const orderVehicles = (o) => Array.isArray(o.vehicles) ? [...new Set(o.vehicles)] : [o.vehicle];
+export const orderVehicles = (o) =>
+  Array.isArray(o.vehicles) ? [...new Set(o.vehicles)] : [o.vehicle];
 export const vehicleFits = (v, o, s) =>
   (o.nature !== "cold" || v === "refrigerated") &&
   Number(o.weight) <= (s.vehicleKg[v] || 0) &&
@@ -41,7 +42,8 @@ export const vehicleFits = (v, o, s) =>
 export function eligible(u, o, s) {
   return (
     u.available &&
-    orderVehicles(o).includes(u.vehicle) && vehicleFits(u.vehicle, o, s) &&
+    orderVehicles(o).includes(u.vehicle) &&
+    vehicleFits(u.vehicle, o, s) &&
     Number(u.budget) >= (o.kind === "free" ? 0 : o.amount) &&
     o.weight <= (s.vehicleKg[u.vehicle] || 0) &&
     Math.max(o.length, o.width, o.height) <= (s.vehicleCm[u.vehicle] || 0) &&
@@ -75,6 +77,20 @@ export const areas = {
   أربيل: ["عينكاوة", "المنارة", "الإسكان"],
   النجف: ["المشراق", "الحنانة", "الكوفة"],
   كربلاء: ["العباسية", "الحسين", "الحر"],
+  // Additional city/district options from COSIT, Prices in Iraq 2015, pp. 3–4.
+  // https://www.cosit.gov.iq/documents/indices/CPI/مستويات%20الاسعار%20في%20العراق/مستويات%20الاسعار%20في%20العراق%20لسنة%202015.pdf
+  "ذي قار": ["الناصرية", "سوق الشيوخ"],
+  بابل: ["الحلة", "المسيب"],
+  ديالى: ["بعقوبة", "بلدروز", "خانقين"],
+  الأنبار: ["الرمادي", "الفلوجة"],
+  "صلاح الدين": ["تكريت", "سامراء"],
+  واسط: ["الكوت", "الحي"],
+  ميسان: ["العمارة", "المجر الكبير"],
+  المثنى: ["السماوة", "الرميثة"],
+  القادسية: ["الديوانية", "الشامية"],
+  كركوك: ["كركوك", "الحويجة"],
+  السليمانية: ["السليمانية", "رانية"],
+  دهوك: ["دهوك", "زاخو"],
 };
 export const areaLocations = {
   الكرادة: { lat: 33.3, lng: 44.43 },

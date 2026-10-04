@@ -719,3 +719,41 @@ test("address conflicts block duplicate names or coordinates without changing or
     /الاحتياط/,
   );
 });
+
+test("recipient governorate can differ from the merchant and persists with the customer's selected location", async () => {
+  const { api, storage, createDemoApi } = await setup();
+  await api("/api/login", { role: "merchant" });
+  const state = await api("/api/state");
+  const recipient = {
+    ...state.orders[0].recipient,
+    province: "البصرة",
+    area: "العشار",
+    location: { lat: 30.51, lng: 47.83 },
+  };
+  const order = await api("/api/orders", {
+    ...state.orders[0],
+    recipient,
+    publish: false,
+  });
+  const restored = createDemoApi(storage);
+  await restored("/api/login", { role: "merchant" });
+  const saved = await restored("/api/state");
+  assert.deepEqual(
+    saved.orders.find((entry) => entry.id === order.id).recipient,
+    recipient,
+  );
+  assert.equal(saved.user.province, state.user.province);
+  assert.ok(
+    saved.user.customers.some(
+      (customer) =>
+        customer.province === "البصرة" && customer.location.lat === 30.51,
+    ),
+  );
+  await assert.rejects(
+    api("/api/orders", {
+      ...state.orders[0],
+      recipient: { ...recipient, province: "" },
+    }),
+    /محافظة المستلم/,
+  );
+});
