@@ -13,6 +13,7 @@ import { removeDeviceDraftStorage } from "./storageMigrations.js";
 import { refreshSampleContent } from "./sampleContent.js";
 import { populatePreviewAccounts } from "./previewContent.js";
 import { normalizeFreeDeliveryAccounts } from "./freeDelivery.js";
+import { TEMPORARY_PASSWORD } from "./previewCredentials.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
@@ -1219,15 +1220,23 @@ export function createDemoApi(
         "نوع الحساب غير متاح في هذا التطبيق",
       );
       // Public demo credentials select the sample for the chosen account type.
+      if (Object.hasOwn(p, "password"))
+        must(
+          p.password === TEMPORARY_PASSWORD,
+          "اسم المستخدم أو كلمة المرور غير صحيحة",
+        );
       if (Object.hasOwn(p, "username") || p.phone === "iraq") {
         must(
-          ["merchant", "free"].includes(p.role) &&
-            (p.username ?? p.phone) === "iraq" &&
-            p.password === "iraq",
+          (p.username ?? p.phone) === "iraq" &&
+            p.password === TEMPORARY_PASSWORD,
           "اسم المستخدم أو كلمة المرور غير صحيحة",
         );
         const demoAccount = data.users.find(
-          (user) => user.id === (p.role === "free" ? "FREE-DEMO" : "MER-DEMO"),
+          (user) =>
+            user.id ===
+            { merchant: "MER-DEMO", free: "FREE-DEMO", courier: "COU-DEMO" }[
+              p.role
+            ],
         );
         must(demoAccount, "الحساب غير متوفر");
         currentId = demoAccount.id;

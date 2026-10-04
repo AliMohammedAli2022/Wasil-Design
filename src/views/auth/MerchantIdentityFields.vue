@@ -27,7 +27,7 @@ defineProps({ model: { type: Object, required: true } });
       label: 'كلمة المرور',
       value: model.r.password,
       attrs:
-        'type=&quot;password&quot; required minlength=&quot;8&quot; autocomplete=&quot;new-password&quot;',
+        'type=&quot;password&quot; required minlength=&quot;3&quot; autocomplete=&quot;new-password&quot;',
     }"
   />
   <p class="file-help">

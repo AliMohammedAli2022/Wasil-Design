@@ -27,7 +27,7 @@ test("iraq demo credentials select the populated merchant and reject a wrong pas
   const result = await api("/api/login", {
     role: "merchant",
     phone: "iraq",
-    password: "iraq",
+    password: "123",
   });
   assert.equal(result.user.id, "MER-DEMO");
   const state = await api("/api/state");
@@ -189,17 +189,18 @@ test("a draft is saved locally and appears for the courier after publication", a
 });
 test("username sign-in selects the correct account and rejects unknown credentials", async () => {
   const { api } = await setup();
-  for (const role of ["merchant", "free"]) {
+  for (const role of ["merchant", "free", "courier"]) {
     const { user } = await api("/api/login", {
       role,
       username: "iraq",
-      password: "iraq",
+      password: "123",
     });
     assert.equal(user.accountType || user.role, role);
     for (const [username, password] of [
       ["iraq", "wrong"],
-      ["unknown", "iraq"],
-      ["07700000001", "iraq"],
+      ["iraq", "iraq"],
+      ["unknown", "123"],
+      ["07700000001", "123"],
       ["", ""],
     ])
       await assert.rejects(

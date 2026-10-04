@@ -20,7 +20,7 @@ test("free account copies merchant features with independent orders, balances, c
   const free = createDemoApi(storage, ["merchant", "free"]);
   const courier = createDemoApi(storage, ["courier"]);
   await merchant("/api/login", { role: "merchant" });
-  await free("/api/login", { role: "free", phone: "iraq", password: "iraq" });
+  await free("/api/login", { role: "free", phone: "iraq", password: "123" });
   await courier("/api/login", { role: "courier" });
   const original = await merchant("/api/state");
   const duplicate = await free("/api/state");

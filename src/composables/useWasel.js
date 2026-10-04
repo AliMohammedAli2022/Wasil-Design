@@ -1,4 +1,5 @@
 import { addressLocation } from "../services/coordinates.js";
+import { TEMPORARY_PASSWORD } from "../services/previewCredentials.js";
 import { provinces } from "../services/geography.js";
 import { merchantSender, pickupAddress } from "../services/addressBook.js";
 import ViewHost from "../components/ViewHost.vue";
@@ -191,6 +192,8 @@ export function useWasel(application = currentApplication()) {
       step: 0,
       role,
       province: "بغداد",
+      password: TEMPORARY_PASSWORD,
+      ...(role === "courier" ? { confirmPassword: TEMPORARY_PASSWORD } : {}),
       ...(role === "free"
         ? { location: null }
         : {
@@ -955,7 +958,7 @@ export function useWasel(application = currentApplication()) {
         }
         if (r.step === 4) {
           await registerAccount(r, f.verificationCode);
-          await login(r.role, { phone: r.phone }, r.password);
+          await login(r.role, { phone: r.phone }, TEMPORARY_PASSWORD);
           toast("تم إنشاء الحساب");
           state.registration = null;
         } else {
@@ -1433,7 +1436,7 @@ export function useWasel(application = currentApplication()) {
         await registerAccount(state.registration);
         const r = state.registration;
         closeModal();
-        await login("courier", { phone: r.phone }, r.password);
+        await login("courier", { phone: r.phone }, TEMPORARY_PASSWORD);
         state.registration = null;
         toast("تم إنشاء حساب المندوب");
       }

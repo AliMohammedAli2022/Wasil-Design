@@ -54,7 +54,7 @@ const form = reactive({
             name="password"
             type="password"
             required
-            minlength="8"
+            minlength="3"
             autocomplete="new-password"
         /></label>
         <h3>العنوان</h3>
