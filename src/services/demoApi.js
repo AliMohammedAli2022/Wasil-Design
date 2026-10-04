@@ -1,4 +1,9 @@
 import {
+  migrateOrderNumbers,
+  nextOrderNumber,
+  resolveOrderNumber,
+} from "./orderNumbers.js";
+import {
   orderStatus,
   statusLabel,
   workflowEventLabels,
@@ -54,6 +59,7 @@ export function createDemoApi(
     )
       data = saved;
   } catch {}
+  migrateOrderNumbers(data);
   if (!data.expandedDemoCatalog) {
     const sample = createDemoData();
     if (data.users.some((u) => u.id === "MER-DEMO")) {
@@ -82,8 +88,8 @@ export function createDemoApi(
   if (!data.expandedOctoberOrders) {
     if (data.users.some((u) => u.id === "MER-DEMO")) {
       const known = new Set(data.orders.map((o) => o.id));
-      for (const order of createDemoData().orders.filter((o) =>
-        o.id.startsWith("ORD-SAMPLE-OCT-"),
+      for (const order of createDemoData().orders.filter(
+        (o) => o.sampleGroup === "october" && o.merchant === "MER-DEMO",
       )) {
         if (!known.has(order.id)) data.orders.push(order);
       }
@@ -157,7 +163,7 @@ export function createDemoApi(
         o.history?.some((event) => event.status === "partial_pending"))
     )
       o.partialDelivered = true;
-    if (/^(?:FREE-)?ORD-DEMO-/.test(o.id) && o.service === "vip")
+    if (o.sampleGroup === "base" && o.service === "vip")
       o.fee = Math.max(o.fee, o.baseFee + data.config.vipSurcharge);
   }
   const feesActive = () =>
@@ -1175,6 +1181,7 @@ export function createDemoApi(
             data.orders.filter((o) => o.photo).map((o) => [o.id, o.photo]),
           );
           data = latest;
+          migrateOrderNumbers(data);
           data.config = { ...defaults, ...data.config };
           for (const o of data.orders)
             if (photos.has(o.id)) o.photo = photos.get(o.id);
@@ -1183,6 +1190,10 @@ export function createDemoApi(
       }
     } catch {}
 
+    p = { ...p };
+    if (p.orderId != null) p.orderId = resolveOrderNumber(data, p.orderId);
+    if (Array.isArray(p.ids))
+      p.ids = p.ids.map((value) => resolveOrderNumber(data, value));
     if (url === "/api/login") {
       must(
         allowedAccounts.includes(p.role),
@@ -1589,7 +1600,7 @@ export function createDemoApi(
       validateOrder(p);
       const o = {
         ...copy(p),
-        id: id("ORD"),
+        id: nextOrderNumber(data),
         merchant: u.id,
         courier: null,
         sender:
@@ -1623,7 +1634,9 @@ export function createDemoApi(
     }
     const match = url.match(/^\/api\/orders\/([^/]+)\/action$/);
     if (match) {
-      const o = data.orders.find((o) => o.id === decodeURIComponent(match[1]));
+      const o = data.orders.find(
+        (o) => o.id === resolveOrderNumber(data, decodeURIComponent(match[1])),
+      );
       must(o, "الطلب غير موجود");
       must(canView(u, o), "الطلب غير متاح لهذا الحساب");
       must(

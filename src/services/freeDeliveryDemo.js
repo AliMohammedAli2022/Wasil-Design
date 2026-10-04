@@ -1,3 +1,4 @@
+import { MERCHANT_ORDER_COUNT } from "./orderNumbers.js";
 // Add independent sample records once; never clone a visitor's edited account.
 export function addFreeDeliveryDemo(data, sample = data) {
   if (data.expandedFreeAccount) return;
@@ -15,10 +16,10 @@ export function addFreeDeliveryDemo(data, sample = data) {
     id: `FREE-DEMO-CUS-${i}`,
   }));
   const orders = sample.orders
-    .filter((order) => order.merchant === merchant.id)
+    .filter((order) => order.merchant === merchant.id && order.sampleGroup)
     .map((order) => ({
       ...structuredClone(order),
-      id: `FREE-${order.id}`,
+      id: String(MERCHANT_ORDER_COUNT + Number(order.id)),
       merchant: user.id,
       sender: structuredClone(user),
     }));

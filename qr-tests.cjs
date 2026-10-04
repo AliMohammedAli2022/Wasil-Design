@@ -171,7 +171,7 @@ test("pickup records QR verification only after code and inspection are valid", 
   const api = createDemoApi({ getItem: () => null, setItem: () => {} });
   await api("/api/login", { role: "courier" });
   const act = (extra) =>
-    api("/api/orders/ORD-DEMO-0005/action", { action: "pickup", ...extra });
+    api("/api/orders/5/action", { action: "pickup", ...extra });
   await assert.rejects(
     act({ code: "000000", inspected: true, paid: true, scanMethod: "qr" }),
   );
@@ -180,7 +180,7 @@ test("pickup records QR verification only after code and inspection are valid", 
   );
   assert.equal(
     (await api("/api/state")).orders
-      .find((x) => x.id === "ORD-DEMO-0005")
+      .find((x) => x.id === "5")
       .history.filter((x) => x.action === "scan").length,
     0,
   );
@@ -204,7 +204,7 @@ test("return codes are private, validated once, logged without secrets, and do n
     setItem: (k, v) => values.set(k, v),
   };
   const api = createDemoApi(storage),
-    id = "ORD-DEMO-0013";
+    id = "13";
   await api("/api/login", { role: "courier" });
   const act = (action, extra = {}) =>
     api(`/api/orders/${id}/action`, { action, ...extra });

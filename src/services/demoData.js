@@ -1,5 +1,6 @@
 // Synthetic, browser-only data for designing and testing the Vue interface.
 // Use plausible fictional names, addresses and descriptions without test labels in visible content.
+import { BASE_ORDER_COUNT, SAMPLE_ORDER_COUNT } from "./orderNumbers.js";
 import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { statusLabel } from "./orderStatuses.js";
 export { statuses } from "./orderStatuses.js";
@@ -165,7 +166,8 @@ export function createDemoData() {
     { length: 54 },
     (_, index) => workflowStages[index % workflowStages.length],
   ).map((status, index) => ({
-    id: "ORD-DEMO-" + String(index + 1).padStart(4, "0"),
+    id: String(index + 1),
+    sampleGroup: "base",
     merchant: merchant.id,
     courier: ["draft", "published", "cancelled"].includes(status)
       ? null
@@ -256,7 +258,8 @@ export function createDemoData() {
       ).toISOString();
       return {
         ...order,
-        id: `ORD-SAMPLE-OCT-${String(number).padStart(4, "0")}`,
+        id: String(BASE_ORDER_COUNT + number),
+        sampleGroup: "october",
         vehicle,
         vehicles: [vehicle],
         courier: order.courier ? driver.id : null,
@@ -338,6 +341,7 @@ export function createDemoData() {
   const data = {
     version: 1,
     sampleContentVersion: 1,
+    nextOrderNumber: SAMPLE_ORDER_COUNT + 1,
     expandedDemoCatalog: true,
     expandedOctoberOrders: true,
     expandedDemoCouriers: true,

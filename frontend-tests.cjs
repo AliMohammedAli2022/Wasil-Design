@@ -298,13 +298,10 @@ test("demo catalog upgrade preserves edited orders and is not repeated", async (
   const first = await api("/api/state");
   assert.equal(first.orders.length, 415);
   assert.equal(
-    first.orders.find((o) => o.id === "ORD-DEMO-0001").recipient.name,
+    first.orders.find((o) => o.id === "1").recipient.name,
     "اسم عدله المستخدم",
   );
-  assert.equal(
-    first.orders.find((o) => o.id === "ORD-DEMO-0001").status,
-    "cancelled",
-  );
+  assert.equal(first.orders.find((o) => o.id === "1").status, "cancelled");
   const again = createDemoApi(storage);
   await again("/api/login", { role: "merchant" });
   assert.equal((await again("/api/state")).orders.length, 415);
@@ -338,10 +335,7 @@ test("merchant and courier account sections open independent dialogs", async () 
     const view = mountView(createAccountViews(() => context).accountView());
     const buttons = view.findAll((node) => node.tag === "button");
     assert.equal(buttons.length, 2);
-    for (const [index, title] of [
-      "معلومات الحساب",
-      "التقييمات",
-    ].entries()) {
+    for (const [index, title] of ["معلومات الحساب", "التقييمات"].entries()) {
       const trigger = buttons[index];
       assert.equal(trigger.tag, "button");
       assert.equal(trigger.props["aria-haspopup"], "dialog");
@@ -378,11 +372,15 @@ test("October samples add twenty per status once without replacing existing orde
   const { createDemoData, statuses } =
     await import("./src/services/demoData.js");
   const data = createDemoData();
-  const extra = data.orders.filter((o) => o.id.startsWith("ORD-SAMPLE-OCT-"));
+  const extra = data.orders.filter(
+    (o) => o.sampleGroup === "october" && o.merchant === "MER-DEMO",
+  );
   for (const status of Object.keys(statuses))
     assert.equal(extra.filter((o) => o.status === status).length, 20);
   assert.equal(new Set(extra.map((o) => o.vehicle)).size, 3);
-  data.orders = data.orders.filter((o) => !o.id.startsWith("ORD-SAMPLE-OCT-"));
+  data.orders = data.orders.filter(
+    (o) => !(o.sampleGroup === "october" && o.merchant === "MER-DEMO"),
+  );
   data.orders[0].notes = "preserve custom edit";
   delete data.expandedOctoberOrders;
   const values = new Map([[DEMO_STORAGE_KEY, JSON.stringify(data)]]);
@@ -408,26 +406,59 @@ test("merchant and free registration require the demo code before creating an ac
     await api("/api/login", { role });
     const before = storage.getItem(key);
     const registration = {
-      role, name: "علي محمد كريم", businessName: "متجر الأناقة",
-      phone: "07912345678", password: "private-password", activity: "shop",
+      role,
+      name: "علي محمد كريم",
+      businessName: "متجر الأناقة",
+      phone: "07912345678",
+      password: "private-password",
+      activity: "shop",
     };
-    for (const verificationCode of [undefined, "", "11111", "1111111", "١١١١١١", "000000", "abcdef"]) {
-      await assert.rejects(api("/api/register", { ...registration, verificationCode }), /كود التحقق/);
+    for (const verificationCode of [
+      undefined,
+      "",
+      "11111",
+      "1111111",
+      "١١١١١١",
+      "000000",
+      "abcdef",
+    ]) {
+      await assert.rejects(
+        api("/api/register", { ...registration, verificationCode }),
+        /كود التحقق/,
+      );
       assert.equal(storage.getItem(key), before);
     }
-    await assert.rejects(api("/api/register", { ...registration, businessName: " ", verificationCode: "111111" }), /اسم النشاط التجاري/);
-    const { user } = await api("/api/register", { ...registration, verificationCode: "111111" });
+    await assert.rejects(
+      api("/api/register", {
+        ...registration,
+        businessName: " ",
+        verificationCode: "111111",
+      }),
+      /اسم النشاط التجاري/,
+    );
+    const { user } = await api("/api/register", {
+      ...registration,
+      verificationCode: "111111",
+    });
     assert.equal(user.name, registration.name);
     assert.equal(user.businessName, registration.businessName);
     assert.equal(user.registrationVerification.method, "demo");
-    assert.ok(Number.isFinite(Date.parse(user.registrationVerification.verifiedAt)));
+    assert.ok(
+      Number.isFinite(Date.parse(user.registrationVerification.verifiedAt)),
+    );
     assert.equal(user.verificationCode, undefined);
     assert.equal(user.password, undefined);
     assert.equal(storage.getItem(key).includes('"verificationCode"'), false);
     const reopened = createDemoApi(storage);
     await reopened("/api/login", { role, phone: registration.phone });
     assert.equal((await reopened("/api/state")).user.id, user.id);
-    await assert.rejects(reopened("/api/register", { ...registration, verificationCode: "111111" }), /مسجل/);
+    await assert.rejects(
+      reopened("/api/register", {
+        ...registration,
+        verificationCode: "111111",
+      }),
+      /مسجل/,
+    );
   }
 });
 
@@ -448,7 +479,10 @@ test("sample accounts, orders and outlets use realistic names and descriptions w
   const { api } = await setup();
   for (const role of ["merchant", "free", "courier"]) {
     await api("/api/login", { role });
-    assert.doesNotMatch(JSON.stringify(await api("/api/state")), /تجريب|وهمي|للفحص/);
+    assert.doesNotMatch(
+      JSON.stringify(await api("/api/state")),
+      /تجريب|وهمي|للفحص/,
+    );
   }
 });
 
@@ -457,8 +491,10 @@ test("existing sample content upgrades once while preserving user edits, balance
   const { api, storage, key, createDemoApi } = await setup();
   const old = createDemoData();
   delete old.sampleContentVersion;
-  old.users.find(user => user.id === "FREE-DEMO").name = "حساب التوصيل الحر التجريبي";
-  old.users.find(user => user.id === "COU-DEMO-01").address = "بغداد، الكرادة — عنوان تجريبي";
+  old.users.find((user) => user.id === "FREE-DEMO").name =
+    "حساب التوصيل الحر التجريبي";
+  old.users.find((user) => user.id === "COU-DEMO-01").address =
+    "بغداد، الكرادة — عنوان تجريبي";
   const order = old.orders[0];
   order.recipient.name = "مستلم تجريبي 1";
   order.notes = "ملابس جاهزة — الاتصال قبل الوصول (بيانات وهمية للفحص)";
@@ -466,28 +502,46 @@ test("existing sample content upgrades once while preserving user edits, balance
   order.amount = 76543;
   order.status = "retry";
   order.history[0].text = "بيانات تجريبية — محفوظ";
-  order.history.push({ at: "2026-10-04T00:00:00Z", text: "طلب الزبون التأجيل", status: "retry" });
+  order.history.push({
+    at: "2026-10-04T00:00:00Z",
+    text: "طلب الزبون التأجيل",
+    status: "retry",
+  });
   old.ledger[0].reason = "إضافة تجريبية";
   old.ledger[0].amount = 123456;
   old.notifications[0].text = "أهلاً بك في حساب التاجر التجريبي";
-  old.outlets = [{ id: "OUT-DEMO", name: "منفذ تجريبي — الكرادة", address: "الكرادة داخل", balance: 456 }];
+  old.outlets = [
+    {
+      id: "OUT-DEMO",
+      name: "منفذ تجريبي — الكرادة",
+      address: "الكرادة داخل",
+      balance: 456,
+    },
+  ];
   storage.setItem(key, JSON.stringify(old));
   const upgraded = createDemoApi(storage);
   await upgraded("/api/login", { role: "merchant" });
   const state = await upgraded("/api/state");
   assert.doesNotMatch(JSON.stringify(state), /تجريب|وهمي/);
-  const record = state.orders.find(item => item.id === order.id);
+  const record = state.orders.find((item) => item.id === order.id);
   assert.equal(record.recipient.name, "أحمد سامر خليل");
   assert.equal(record.sender.address, "عنوان معدّل — دار 52");
   assert.equal(record.amount, 76543);
   assert.equal(record.status, "retry");
   assert.equal(record.history[1].text, "طلب الزبون التأجيل");
   assert.equal(state.ledger[0].amount, 123456);
-  assert.equal(state.outlets.find(outlet => outlet.id === "OUT-DEMO").balance, 456);
+  assert.equal(
+    state.outlets.find((outlet) => outlet.id === "OUT-DEMO").balance,
+    456,
+  );
   const saved = JSON.parse(storage.getItem(key));
   saved.orders[0].recipient.name = "اسم عدّله المستخدم";
   storage.setItem(key, JSON.stringify(saved));
   const reopened = createDemoApi(storage);
   await reopened("/api/login", { role: "merchant" });
-  assert.equal((await reopened("/api/state")).orders.find(item => item.id === order.id).recipient.name, "اسم عدّله المستخدم");
+  assert.equal(
+    (await reopened("/api/state")).orders.find((item) => item.id === order.id)
+      .recipient.name,
+    "اسم عدّله المستخدم",
+  );
 });

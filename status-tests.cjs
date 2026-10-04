@@ -95,14 +95,14 @@ test("filters include every operational step exactly once and counts follow the 
   assert.ok(
     filterOrders(orders, { filter: "completed", screen: "home" }).length,
   );
-  const match = transit[0];
+  const match = transit.at(-1);
   assert.deepEqual(
     filterOrders(orders, {
       filter: "transit",
       screen: "registry",
       query: match.id,
     }).map((o) => o.id),
-    [match.id, "FREE-" + match.id],
+    [match.id],
   );
 });
 

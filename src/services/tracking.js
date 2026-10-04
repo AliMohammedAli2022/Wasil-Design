@@ -1,3 +1,4 @@
+import { legacyOrderNumber } from "./orderNumbers.js";
 import { orderStatus } from "./orderStatuses.js";
 
 function trackingEvents(history = []) {
@@ -55,7 +56,14 @@ export function readTracking(hash) {
       return null;
     const events = trackingEvents(data.events);
     const status = orderStatus({ status: data.status, history: events });
-    return status ? { id: data.id, at: data.at, status, events } : null;
+    return status
+      ? {
+          id: legacyOrderNumber(data.id) ?? data.id,
+          at: data.at,
+          status,
+          events,
+        }
+      : null;
   } catch {
     return null;
   }
