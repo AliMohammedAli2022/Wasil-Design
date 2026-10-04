@@ -1,8 +1,8 @@
 "use strict";
 const BASE = new URL("./", self.location.href);
 const PREFIX = "wasel-vue-" + BASE.pathname + "-";
-const CACHE = PREFIX + "2e1613c77af8";
-const FILES = ["./","assets/apple-touch-icon.png","assets/bal3d.css","assets/bal3d.js","assets/brand-transparent-VUtseKAh.svg","assets/brand-transparent.svg","assets/cairo-variable-gF84A2Tc.ttf","assets/cairo-variable.ttf","assets/favicon-32.png","assets/favicon-48.png","assets/font-0-0.ttf","assets/font-0-1.ttf","assets/font-0-2.ttf","assets/font-0-3.ttf","assets/font-1-3-B6X0AcE6.ttf","assets/font-1-3.ttf","assets/fonts.css","assets/icon-192.png","assets/icon-512.png","assets/icon-maskable-192.png","assets/icon-maskable-512.png","assets/index-BFSlXbWi.js","assets/index-CYg8rO9x.css","assets/leaflet-src-DvtdHAaq.js","assets/LICENSE-Material-Symbols.txt","assets/logo-mark.svg","assets/OFL-Cairo.txt","assets/OFL-IBM-Plex.txt","assets/profile-0.png","assets/wasel-brand-B1pZ3qtI.jpeg","assets/wasel-brand.jpeg","index.html","manifest.webmanifest"].map((file) => new URL(file, BASE).href);
+const CACHE = PREFIX + "03257478bd21";
+const FILES = ["./","assets/apple-touch-icon.png","assets/bal3d.css","assets/bal3d.js","assets/brand-transparent-VUtseKAh.svg","assets/brand-transparent.svg","assets/cairo-variable-gF84A2Tc.ttf","assets/cairo-variable.ttf","assets/favicon-32.png","assets/favicon-48.png","assets/font-0-0.ttf","assets/font-0-1.ttf","assets/font-0-2.ttf","assets/font-0-3.ttf","assets/font-1-3-B6X0AcE6.ttf","assets/font-1-3.ttf","assets/fonts.css","assets/icon-192.png","assets/icon-512.png","assets/icon-maskable-192.png","assets/icon-maskable-512.png","assets/index-CmMjlLwm.css","assets/index-DxYvDJlQ.js","assets/leaflet-src-B-RQXp1_.js","assets/LICENSE-Material-Symbols.txt","assets/logo-mark.svg","assets/OFL-Cairo.txt","assets/OFL-IBM-Plex.txt","assets/profile-0.png","assets/wasel-brand-B1pZ3qtI.jpeg","assets/wasel-brand.jpeg","index.html","manifest.webmanifest"].map((file) => new URL(file, BASE).href);
 self.addEventListener("install", (event) =>
   event.waitUntil(
     caches

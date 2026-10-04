@@ -598,3 +598,52 @@ test("saved pickup addresses retain coordinates and province without replacing m
     1,
   );
 });
+
+test("order pickup titles are saved and reused without duplicate addresses or changed merchant identity", async () => {
+  const { api } = await setup();
+  await api("/api/login", { role: "merchant" });
+  const state = await api("/api/state");
+  const sender = {
+    ...state.orders[0].sender,
+    addressId: "",
+    addressName: "مخزن الربيع",
+    area: "زيونة",
+    address: "شارع الربيعي قرب السوق",
+    location: { lat: 33.33, lng: 44.47 },
+  };
+  const first = await api("/api/orders", {
+    ...state.orders[0],
+    sender,
+    publish: false,
+  });
+  let saved = (await api("/api/state")).user.addresses.filter(
+    (a) => a.name === sender.addressName,
+  );
+  assert.equal(saved.length, 1);
+  assert.equal(first.sender.addressId, saved[0].id);
+  assert.equal(first.sender.addressName, sender.addressName);
+  assert.equal(first.sender.name, state.user.name);
+  await api("/api/orders", {
+    ...state.orders[0],
+    sender: first.sender,
+    publish: true,
+  });
+  saved = (await api("/api/state")).user.addresses.filter(
+    (a) => a.name === sender.addressName,
+  );
+  assert.equal(saved.length, 1);
+  assert.deepEqual(saved[0].location, sender.location);
+  await api(`/api/orders/${first.id}/action`, {
+    action: "edit",
+    sender: {
+      ...first.sender,
+      addressName: "مخزن الملابس",
+      address: "شارع الرواد قرب السوق",
+    },
+  });
+  const edited = (await api("/api/state")).user.addresses.find(
+    (a) => a.name === "مخزن الملابس",
+  );
+  assert.ok(edited);
+  assert.equal(saved[0].address, sender.address);
+});

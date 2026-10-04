@@ -9,6 +9,9 @@ export function merchantSender(user, address) {
     area: place.area || "",
     address: place.address || "",
     addressId: address?.addressId || address?.id || "",
+    addressName:
+      address?.addressName ??
+      (address?.id ? address.name : address ? "" : "عنوان الملف الشخصي"),
     location: place.location
       ? { lat: place.location.lat, lng: place.location.lng }
       : null,
@@ -41,12 +44,13 @@ export function rememberOrderPlaces(user, order, makeId) {
   if (sender?.address && sender.location) {
     let saved = user.addresses.find(
       (a) =>
-        key({ province: user.province, ...a }, false) === key(sender, false),
+        key({ province: user.province, ...a }, false) === key(sender, false) &&
+        (!sender.addressName || a.name === sender.addressName),
     );
     if (!saved) {
       saved = {
         id: makeId("ADR"),
-        name: sender.area || sender.address,
+        name: sender.addressName || sender.area || sender.address,
         province: sender.province,
         area: sender.area,
         address: sender.address,
@@ -55,6 +59,7 @@ export function rememberOrderPlaces(user, order, makeId) {
       user.addresses.push(saved);
     }
     sender.addressId = saved.id;
+    sender.addressName = saved.name;
   }
   const recipient = order.recipient;
   if (

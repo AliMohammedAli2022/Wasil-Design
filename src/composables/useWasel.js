@@ -512,6 +512,7 @@ export function useWasel(application = currentApplication()) {
         province:
           f.senderProvince || d.sender.province || state.S.user.province,
         addressId: d.sender.addressId || "",
+        addressName: f.senderAddressName,
         phone2: state.S.user.phone2,
         area: f.senderArea,
         address: f.senderAddress,

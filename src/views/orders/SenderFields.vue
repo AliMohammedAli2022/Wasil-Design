@@ -1,14 +1,26 @@
 <script setup>
 import { attributes } from "../../services/formFields.js";
-import { mergeProps } from "vue";
+import { mergeProps, reactive } from "vue";
 import FormInput from "../ui/FormInput.vue";
 import LocationFields from "../ui/LocationFields.vue";
 import FormSelect from "../ui/FormSelect.vue";
 import DetailRow from "../ui/DetailRow.vue";
-import LocationPanel from "../../components/LocationPanel.vue";
+import AddressFields from "../../components/AddressFields.vue";
 
 defineOptions({ inheritAttrs: false });
-defineProps({ model: { type: Object, required: true } });
+const props = defineProps({ model: { type: Object, required: true } });
+const sender = props.model.d.sender;
+const addressForm = reactive({
+  name:
+    sender.addressName ??
+    props.model.u.addresses?.find((a) => a.id === sender.addressId)?.name ??
+    (props.model.d.pickupChoice === "new" ? "" : "عنوان الملف الشخصي"),
+  province: sender.province || props.model.u.province,
+  area: sender.area || "",
+  address: sender.address || "",
+  lat: sender.location?.lat ?? "",
+  lng: sender.location?.lng ?? "",
+});
 </script>
 <template>
   <template v-if="model.d.kind === 'free'"
@@ -75,15 +87,15 @@ defineProps({ model: { type: Object, required: true } });
   <template v-else
     ><p class="muted">
       تُعبّأ بيانات التاجر تلقائياً من ملفه الشخصي. يمكنك اختيار موقع استلام
-      بديل من «عناويني» أو إضافة عنوان للشحنة.
+      بديل من «عناويني» أو إضافة عنوان جديد يُحفظ فيها عند حفظ الطلب أو نشره.
     </p>
     <FormSelect
       :model="{
         name: 'pickupAddress',
-        label: 'عنوان الاستلام',
+        label: 'عنوان استلام الطلب',
         values: {
           '': 'عنوان الملف الشخصي',
-          new: 'إضافة مكان جديد',
+          new: 'إضافة عنوان جديد',
           ...Object.fromEntries(
             (model.u.addresses || []).map((a) => [
               a.id,
@@ -98,27 +110,6 @@ defineProps({ model: { type: Object, required: true } });
         label: 'اسم التاجر',
         value: model.u.name,
       }" />
-    <FormInput
-      :model="{
-        name: 'senderProvince',
-        label: 'المحافظة',
-        value: model.d.sender.province || model.u.province,
-        attrs: 'required maxlength=&quot;80&quot;',
-      }" />
-    <FormInput
-      :model="{
-        name: 'senderArea',
-        label: 'منطقة الاستلام',
-        value: model.d.sender.area,
-        attrs: 'required maxlength=&quot;80&quot;',
-      }" />
-    <FormInput
-      :model="{
-        name: 'senderAddress',
-        label: 'عنوان الاستلام',
-        value: model.d.sender.address,
-        attrs: 'required maxlength=&quot;200&quot;',
-      }" />
     <DetailRow
       :model="{
         label: 'الهاتف الأساسي',
@@ -127,12 +118,15 @@ defineProps({ model: { type: Object, required: true } });
     <DetailRow
       v-if="model.u.phone2"
       :model="{ label: 'الهاتف الاحتياطي', value: model.u.phone2 }" />
-    <LocationPanel
-      area-field="senderArea"
-      :location="model.d.sender.location"
-      :editable="true"
-      :required="true"
-      name="موقع الاستلام"
-    ></LocationPanel
-  ></template>
+    <AddressFields
+      :form="addressForm"
+      :default-province="model.u.province"
+      required-location
+      :names="{
+        name: 'senderAddressName',
+        province: 'senderProvince',
+        area: 'senderArea',
+        address: 'senderAddress',
+      }"
+  /></template>
 </template>

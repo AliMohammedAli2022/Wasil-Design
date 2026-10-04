@@ -2,9 +2,8 @@
 import { computed, nextTick, reactive, ref } from "vue";
 import LocationPanel from "./LocationPanel.vue";
 import { api } from "../services/api.js";
-import { areas } from "../services/orderPolicy.js";
-import { provinces } from "../services/geography.js";
-import { toEnglishDigits } from "../services/formFields.js";
+import AddressFields from "./AddressFields.vue";
+import { addressLocation } from "../services/coordinates.js";
 
 const props = defineProps({ user: { type: Object, required: true } });
 const emit = defineEmits(["refresh"]);
@@ -29,27 +28,7 @@ const filtered = computed(() =>
       .includes(query.value.trim()),
   ),
 );
-const provinceOptions = computed(() => [
-  ...new Set(
-    [props.user.province, form.province, ...provinces].filter(Boolean),
-  ),
-]);
-function coordinate(value) {
-  const text = toEnglishDigits(value ?? "")
-    .trim()
-    .replace(/[،,٫]/g, ".");
-  return text ? Number(text) : NaN;
-}
-const location = computed(() => {
-  const lat = coordinate(form.lat),
-    lng = coordinate(form.lng);
-  return Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    Math.abs(lat) <= 90 &&
-    Math.abs(lng) <= 180
-    ? { lat, lng }
-    : null;
-});
+const location = computed(() => addressLocation(form.lat, form.lng));
 async function navigate(target) {
   view.value = target;
   error.value = "";
@@ -237,74 +216,7 @@ async function remove() {
       class="form-stack address-form"
       @submit.prevent="save"
     >
-      <label
-        >اسم العنوان<input v-model.trim="form.name" required maxlength="80"
-      /></label>
-      <label
-        >المحافظة<select v-model="form.province" required>
-          <option
-            v-for="province in provinceOptions"
-            :key="province"
-            :value="province"
-          >
-            {{ province }}
-          </option>
-        </select></label
-      >
-      <label
-        >المنطقة<input
-          v-model.trim="form.area"
-          name="area"
-          list="address-area-options"
-          required
-          maxlength="80"
-      /></label>
-      <datalist id="address-area-options">
-        <option
-          v-for="area in areas[form.province] || []"
-          :key="area"
-          :value="area"
-        />
-      </datalist>
-      <label
-        >العنوان و أقرب نقطة دالة<textarea
-          v-model.trim="form.address"
-          required
-          maxlength="200"
-          rows="3"
-        ></textarea>
-      </label>
-      <div class="address-coordinate-grid">
-        <label
-          >خط العرض<input
-            v-model="form.lat"
-            name="latitude"
-            dir="ltr"
-            inputmode="decimal"
-            placeholder="33.300000"
-        /></label>
-        <label
-          >خط الطول<input
-            v-model="form.lng"
-            name="longitude"
-            dir="ltr"
-            inputmode="decimal"
-            placeholder="44.430000"
-        /></label>
-      </div>
-      <p class="file-help">
-        الصق الإحداثيات، أو اضغط على الخارطة، أو استخدم «تحديد موقعي الحالي».
-      </p>
-      <LocationPanel
-        :location="location"
-        editable
-        name="الموقع على الخارطة"
-        :show-external-actions="false"
-        @update:location="
-          form.lat = $event.lat;
-          form.lng = $event.lng;
-        "
-      />
+      <AddressFields :form="form" :default-province="user.province" />
       <div class="address-actions">
         <button class="primary-button" :disabled="busy">
           {{ busy ? "جارٍ الحفظ…" : "حفظ العنوان" }}
@@ -363,8 +275,7 @@ async function remove() {
   padding: 10px 12px;
   font-size: 14px;
 }
-.address-card-grid,
-.address-coordinate-grid {
+.address-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -425,9 +336,6 @@ async function remove() {
   margin: 0;
   font-weight: 700;
   overflow-wrap: anywhere;
-}
-.address-coordinate-grid label {
-  min-width: 0;
 }
 .address-actions > button {
   flex: 1;
