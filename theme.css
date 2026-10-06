@@ -433,3 +433,20 @@ body:not(.auth-mode) .wasel-app>#app{padding-bottom:calc(130px + env(safe-area-i
 .auth-mode .is-role-choice #app{flex:1;display:flex;min-height:0;width:100%;}
 .is-role-choice .glass-entry{flex:1;width:100%;min-height:0;box-sizing:border-box;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));}
 .welcome-splash{box-sizing:border-box;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);}
+
+/* Courier fields use one rounded focus indicator, including in dark mode. */
+html[data-application="courier"][data-theme] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), textarea, select):focus {
+  outline: none !important;
+  border-color: #f47d2f !important;
+  box-shadow: 0 0 0 3px #f47d2f24;
+}
+html[data-application="courier"][data-theme] .courier-input:focus-within {
+  border-color: #f47d2f !important;
+  box-shadow: 0 0 0 3px #f47d2f24;
+}
+html[data-application="courier"][data-theme] .courier-input :is(input, select) {
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
