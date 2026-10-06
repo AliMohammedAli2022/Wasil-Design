@@ -14,6 +14,7 @@ import { refreshSampleContent } from "./sampleContent.js";
 import { populatePreviewAccounts } from "./previewContent.js";
 import { normalizeFreeDeliveryAccounts } from "./freeDelivery.js";
 import { addPreviewCouriers } from "./previewCouriers.js";
+import { populateCourierScenarios } from "./courierScenarios.js";
 import { TEMPORARY_PASSWORD } from "./previewCredentials.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
@@ -1256,6 +1257,7 @@ export function createDemoApi(
         data.users.find((u) => accountType(u) === p.role);
       must(u, "الحساب غير متوفر");
       currentId = u.id;
+      populateCourierScenarios(data, u);
       data.lastByRole[p.role] = u.id;
       persist();
       return { user: copy(u) };

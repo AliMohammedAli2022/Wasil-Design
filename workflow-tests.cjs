@@ -1,5 +1,204 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
+async function hassanWorkspace() {
+  const { createDemoApi, DEMO_STORAGE_KEY } =
+    await import("./src/services/demoApi.js");
+  const values = new Map();
+  const storage = {
+    getItem: (k) => values.get(k),
+    setItem: (k, v) => values.set(k, v),
+  };
+  const courier = createDemoApi(storage, ["courier"]);
+  const merchant = createDemoApi(storage, ["merchant", "free"]);
+  const free = createDemoApi(storage, ["merchant", "free"]);
+  const login = () =>
+    courier("/api/login", {
+      role: "courier",
+      phone: "07700000201",
+      password: "123",
+    });
+  await login();
+  await merchant("/api/login", {
+    role: "merchant",
+    username: "iraq",
+    password: "123",
+  });
+  await free("/api/login", { role: "free", username: "iraq", password: "123" });
+  const raw = () => JSON.parse(storage.getItem(DEMO_STORAGE_KEY));
+  const orders = () =>
+    raw().orders.filter((o) => o.sampleGroup === "hassan-workflow");
+  const find = (scenario, owner = "MER-DEMO") =>
+    orders().find((o) => o.scenario === scenario && o.merchant === owner);
+  const act = (api, o, action, p = {}) =>
+    api(`/api/orders/${o.id}/action`, { action, ...p });
+  return {
+    courier,
+    merchant,
+    free,
+    login,
+    raw,
+    orders,
+    find,
+    act,
+    storage,
+    key: DEMO_STORAGE_KEY,
+  };
+}
+
+test("Hassan's linked scenarios cover public states without leaking drafts or resetting progress", async () => {
+  const t = await hassanWorkspace();
+  const { orderStatus, statuses } =
+    await import("./src/services/orderStatuses.js");
+  assert.equal(t.orders().length, 48);
+  assert.equal(
+    new Set(t.raw().orders.map((o) => o.id)).size,
+    t.raw().orders.length,
+  );
+  assert.deepEqual(
+    new Set(t.orders().map(orderStatus)),
+    new Set(Object.keys(statuses)),
+  );
+  const courier = await t.courier("/api/state");
+  for (const o of t.orders()) {
+    assert.match(o.id, /^\d+$/);
+    assert.match(o.recipient.phone, /^07[789]\d{8}$/);
+    assert.ok(o.sender.location && o.recipient.location);
+    if (o.kind === "free") {
+      assert.equal(o.amount, 0);
+      assert.ok(!o.sender.businessName);
+    }
+    assert.equal(
+      courier.orders.some((v) => v.id === o.id),
+      o.status !== "draft",
+    );
+  }
+  for (const [api, owner] of [
+    [t.merchant, "MER-DEMO"],
+    [t.free, "FREE-DEMO"],
+  ]) {
+    const s = await api("/api/state");
+    for (const o of t.orders().filter((o) => o.merchant === owner))
+      assert.ok(s.orders.some((v) => v.id === o.id));
+    assert.ok(
+      !s.orders.some(
+        (o) => o.sampleGroup === "hassan-workflow" && o.merchant !== owner,
+      ),
+    );
+  }
+  const o = t.find("extend-arrival"),
+    deadline = Date.parse(o.deadline);
+  await t.act(t.courier, o, "extend", { minutes: 5 });
+  await t.login();
+  assert.equal(t.orders().length, 48);
+  assert.equal(
+    Date.parse(t.find("extend-arrival").deadline),
+    deadline + 300000,
+  );
+  // Existing browser data is migrated once; reopening does not revive expired reservations.
+  const raw = t.raw();
+  raw.orders.find((v) => v.id === o.id).deadline = new Date(
+    Date.now() - 1000,
+  ).toISOString();
+  t.storage.setItem(t.key, JSON.stringify(raw));
+  await t.login();
+  await t.courier("/api/state");
+  assert.equal(t.find("extend-arrival").status, "published");
+  assert.equal(t.orders().length, 48);
+});
+
+test("linked merchant and free orders support offers, booking, pickup and full delivery across sessions", async () => {
+  for (const [owner, role] of [
+    ["MER-DEMO", "merchant"],
+    ["FREE-DEMO", "free"],
+  ]) {
+    const t = await hassanWorkspace(),
+      sender = t[role];
+    const offerOrder = t.find("price-offer", owner);
+    await t.act(t.courier, offerOrder, "offer", { fee: 6000 });
+    const offer = (await sender("/api/state")).offers.find(
+      (v) => v.orderId === offerOrder.id,
+    );
+    assert.ok(offer);
+    await t.act(sender, offerOrder, "accept_offer", { offer: offer.id });
+    const accepted = (await t.courier("/api/state")).orders.find(
+      (o) => o.id === offerOrder.id,
+    );
+    assert.equal(accepted.status, "reserved");
+    assert.equal(accepted.fee, 6000);
+    const o = t.find("booking", owner);
+    await t.act(t.courier, o, "reserve");
+    await t.act(t.courier, o, "extend", { minutes: 1 });
+    await t.act(t.courier, o, "depart");
+    await t.act(t.courier, o, "arrive", {
+      location: o.sender.location,
+      accuracy: 10,
+    });
+    const visible = (await sender("/api/state")).orders.find(
+      (v) => v.id === o.id,
+    );
+    assert.equal(visible.status, "waiting");
+    const budget = (await t.courier("/api/state")).user.budget;
+    await t.act(t.courier, o, "pickup", {
+      code: visible.handoverCode,
+      inspected: true,
+      paid: true,
+    });
+    assert.equal(
+      (await t.courier("/api/state")).user.budget,
+      budget - o.amount,
+    );
+    await t.act(t.courier, o, "transit");
+    await t.act(t.courier, o, "customer_arrive");
+    await t.act(t.courier, o, "deliver", {
+      confirmed: true,
+      proof: "تم التسليم للمستلم وتحصيل المستحق",
+    });
+    await t.act(t.courier, o, "settle_delivery", { confirmed: true });
+    await t.act(t.courier, o, "complete");
+    assert.equal(
+      (await sender("/api/state")).orders.find((v) => v.id === o.id).status,
+      "completed",
+    );
+  }
+});
+
+test("prepared retry, return and partial delivery scenarios remain actionable by their linked accounts", async () => {
+  const t = await hassanWorkspace();
+  for (const [owner, role] of [
+    ["MER-DEMO", "merchant"],
+    ["FREE-DEMO", "free"],
+  ]) {
+    const sender = t[role];
+    const retry = t.find("approve-retry", owner);
+    await t.act(sender, retry, "approve_retry");
+    await t.act(t.courier, retry, "customer_arrive");
+    const returned = t.find("start-return", owner);
+    await t.act(t.courier, returned, "return_start");
+    const code = (await sender("/api/state")).orders.find(
+      (o) => o.id === returned.id,
+    ).returnCode;
+    await t.act(t.courier, returned, "return_arrive", { code });
+    await t.act(sender, returned, "receive_return", { inspected: true });
+    await t.act(t.courier, returned, "settle_return", {
+      confirmed: true,
+      fees: 7000,
+    });
+    await t.act(t.courier, returned, "complete");
+    assert.equal(
+      (await sender("/api/state")).orders.find((o) => o.id === returned.id)
+        .result,
+      "returned",
+    );
+  }
+  const partial = t.find("approve-partial");
+  await t.act(t.merchant, partial, "partial_approve");
+  await t.act(t.courier, partial, "partial_confirm", { confirmed: true });
+  assert.equal(
+    (await t.merchant("/api/state")).orders.find((o) => o.id === partial.id)
+      .publicStatus,
+    "partial_pending",
+  );
+});
 async function setup() {
   const { createDemoApi, DEMO_STORAGE_KEY } =
     await import("./src/services/demoApi.js");
