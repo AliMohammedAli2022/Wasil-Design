@@ -4,6 +4,7 @@ import TermsContent from "./TermsContent.vue";
 import { reachedTermsEnd, scrollProgress } from "../services/termsConsent.js";
 
 const emit = defineEmits(["accept"]);
+defineProps({ nextPage: { type: String, default: "register" } });
 const logo = new URL("assets/logo-mark.svg", document.baseURI).href;
 const viewport = ref(null);
 const content = ref(null);
@@ -56,7 +57,13 @@ onBeforeUnmount(() => {
           <strong>واصل</strong><span>نبدأ بثقة</span>
         </div>
         <h1 id="terms-title">شروط الاستخدام والمسؤولية</h1>
-        <p>لحمايتك وحماية الجميع، اطّلع على الشروط قبل إنشاء حسابك.</p>
+        <p>
+          {{
+            nextPage === "login"
+              ? "لحمايتك وحماية الجميع، اطّلع على الشروط قبل تسجيل الدخول."
+              : "لحمايتك وحماية الجميع، اطّلع على الشروط قبل إنشاء حسابك."
+          }}
+        </p>
       </div>
       <div
         class="terms-progress"
@@ -86,7 +93,9 @@ onBeforeUnmount(() => {
         <p id="terms-scroll-hint" role="status">
           {{
             reachedEnd
-              ? "يمكنك الآن الموافقة والمتابعة إلى التسجيل."
+              ? nextPage === "login"
+                ? "يمكنك الآن الموافقة والمتابعة إلى تسجيل الدخول."
+                : "يمكنك الآن الموافقة والمتابعة إلى التسجيل."
               : "مرّر الشروط حتى النهاية لتفعيل زر الموافقة."
           }}
         </p>

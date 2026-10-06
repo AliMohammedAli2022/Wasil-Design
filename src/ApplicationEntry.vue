@@ -8,6 +8,7 @@ import { termsConsent } from "./services/termsConsent.js";
 import { routeHash } from "./services/routes.js";
 
 const application = currentApplication();
+const entryPage = application.id === "courier" ? "login" : "register";
 const accepted = ref(Boolean(termsConsent.read(application.id)));
 const storageNotice = ref("");
 const portal = ref(
@@ -23,7 +24,7 @@ function accept() {
   // Mount the application only after explicit consent, including for deep links.
   const destination = new URL(location.href);
   destination.searchParams.delete("portal");
-  destination.hash = routeHash(application.defaultAccount, "register");
+  destination.hash = routeHash(application.defaultAccount, entryPage);
   history.replaceState(null, "", destination);
   portal.value = false;
   accepted.value = true;
@@ -31,7 +32,7 @@ function accept() {
 </script>
 
 <template>
-  <TermsOnboarding v-if="!accepted" @accept="accept" />
+  <TermsOnboarding v-if="!accepted" :next-page="entryPage" @accept="accept" />
   <template v-else>
     <p v-if="storageNotice" class="consent-storage-notice" role="status">
       {{ storageNotice }}
