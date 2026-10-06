@@ -201,7 +201,7 @@ export function useWasel(application = currentApplication()) {
             vehicle: "sedan",
             photos: [],
             documents: {},
-            location: { lat: 33.3, lng: 44.43 },
+            location: role === "courier" ? null : { lat: 33.3, lng: 44.43 },
           }),
     };
     registrationView();
@@ -1309,11 +1309,6 @@ export function useWasel(application = currentApplication()) {
     if (!f) return;
     for (const [k, v] of new FormData(f))
       if (typeof v === "string") state.registration[k] = v;
-    if (Number(state.registration.step) === 2)
-      state.registration.location = addressLocation(
-        f.elements.lat.value,
-        f.elements.lng.value,
-      );
   }
   function stopDocumentCamera() {
     ui.cameraReady = false;

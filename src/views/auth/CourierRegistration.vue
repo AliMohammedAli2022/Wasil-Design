@@ -3,7 +3,6 @@ import { attributes } from "../../services/formFields.js";
 import { mergeProps } from "vue";
 import ActionButton from "../ui/ActionButton.vue";
 import MaterialIcon from "../shell/MaterialIcon.vue";
-import LocationFields from "../ui/LocationFields.vue";
 import ViewContent from "../../components/ViewContent.vue";
 defineOptions({ inheritAttrs: false });
 defineProps({ model: { type: Object, required: true } });
@@ -35,7 +34,7 @@ const { ui } = useViewState();
         <input type="hidden" name="role" value="courier" />
         <p class="status-note">
           {{
-            `${model.stage + 1} / 3 — ${["المعلومات الأساسية", "وسيلة التوصيل", "الوثائق والموقع"][model.stage]}`
+            `${model.stage + 1} / 3 — ${["المعلومات الأساسية", "وسيلة التوصيل", "الوثائق"][model.stage]}`
           }}
         </p>
         <fieldset v-bind="model.group(0)">
@@ -176,15 +175,6 @@ const { ui } = useViewState();
           <div class="document-grid">
             <ViewContent :content="model.doc('licenseFront')" />
             <ViewContent :content="model.doc('licenseBack')" />
-          </div>
-          <div class="courier-divider"><span>موقع الانطلاق</span></div>
-          <p class="courier-help">حدّد موقعك ليظهر لك الطلب المناسب والقريب.</p>
-          <div class="courier-location">
-            <LocationFields
-              :model="{
-                loc: model.r.location,
-              }"
-            />
           </div>
         </fieldset>
         <template v-if="model.stage > 0"
