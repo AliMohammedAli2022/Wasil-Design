@@ -34,7 +34,7 @@ const { ui } = useViewState();
         <input type="hidden" name="role" value="courier" />
         <p class="status-note">
           {{
-            `${model.stage + 1} / 3 — ${["المعلومات الأساسية", "وسيلة التوصيل", "الوثائق"][model.stage]}`
+            `${model.stage + 1} / 3 — ${["المعلومات الأساسية", "وسيلة النقل والعنوان", "الوثائق"][model.stage]}`
           }}
         </p>
         <fieldset v-bind="model.group(0)">
@@ -60,52 +60,6 @@ const { ui } = useViewState();
               )
             "
           />
-          <label class="courier-field"
-            >المحافظة
-            <span class="courier-input"
-              ><MaterialIcon
-                :model="{
-                  n: 'map',
-                }"
-              />
-              <select name="province" :required="true">
-                <template v-for="p in model.provinces"
-                  ><option
-                    v-bind="
-                      mergeProps(
-                        {},
-                        attributes(model.r.province === p ? 'selected' : ''),
-                      )
-                    "
-                  >
-                    {{ p }}
-                  </option></template
-                >
-              </select></span
-            ></label
-          >
-          <ViewContent
-            :content="
-              model.field(
-                'area',
-                'المنطقة',
-                'near_me',
-                'text',
-                'maxlength=&quot;80&quot;',
-              )
-            "
-          />
-          <ViewContent
-            :content="
-              model.field(
-                'address',
-                'العنوان و أقرب نقطة دالة',
-                'location_on',
-                'text',
-                'autocomplete=&quot;street-address&quot; maxlength=&quot;200&quot;',
-              )
-            "
-          />
           <ViewContent :content="model.password('password', 'كلمة المرور')" />
           <ViewContent
             :content="model.password('confirmPassword', 'تأكيد كلمة المرور')"
@@ -113,7 +67,7 @@ const { ui } = useViewState();
         </fieldset>
         <fieldset v-bind="model.group(1)">
           <div class="courier-divider">
-            <span>وسيلة التوصيل · الوثائق</span>
+            <span>معلومات وسيلة النقل</span>
           </div>
           <fieldset class="vehicle-fieldset">
             <legend>وسيلة التوصيل</legend>
@@ -160,6 +114,53 @@ const { ui } = useViewState();
               )
             "
           />
+          <div class="courier-divider"><span>معلومات العنوان</span></div>
+          <label class="courier-field"
+            >المحافظة
+            <span class="courier-input"
+              ><MaterialIcon
+                :model="{
+                  n: 'map',
+                }"
+              />
+              <select name="province" :required="true">
+                <template v-for="p in model.provinces"
+                  ><option
+                    v-bind="
+                      mergeProps(
+                        {},
+                        attributes(model.r.province === p ? 'selected' : ''),
+                      )
+                    "
+                  >
+                    {{ p }}
+                  </option></template
+                >
+              </select></span
+            ></label
+          >
+          <ViewContent
+            :content="
+              model.field(
+                'area',
+                'المنطقة',
+                'near_me',
+                'text',
+                'maxlength=&quot;80&quot;',
+              )
+            "
+          />
+          <ViewContent
+            :content="
+              model.field(
+                'address',
+                'العنوان و أقرب نقطة دالة',
+                'location_on',
+                'text',
+                'autocomplete=&quot;street-address&quot; maxlength=&quot;200&quot;',
+              )
+            "
+          />
         </fieldset>
         <fieldset v-bind="model.group(2)">
           <h2 class="document-heading">بطاقة السكن</h2>
@@ -177,27 +178,24 @@ const { ui } = useViewState();
             <ViewContent :content="model.doc('licenseBack')" />
           </div>
         </fieldset>
-        <template v-if="model.stage > 0"
-          ><ActionButton
-            :model="{
-              action: 'courier-step-back',
-            }"
-            >السابق</ActionButton
-          ></template
-        >
-
         <p class="inline-error" id="courier-error" role="alert">
           {{ ui.formError }}
         </p>
-        <button class="courier-create" type="submit">
-          <template v-if="model.stage &lt; 2">{{ "التالي " }}</template>
-          <template v-else>{{ "مراجعة البيانات " }}</template>
-          <MaterialIcon
-            :model="{
-              n: 'arrow_back',
-            }"
-          />
-        </button>
+        <div class="courier-step-actions">
+          <button
+            v-if="model.stage > 0"
+            class="courier-previous"
+            type="button"
+            data-action="courier-step-back"
+          >
+            <MaterialIcon :model="{ n: 'arrow_forward' }" />
+            السابق
+          </button>
+          <button class="courier-create" type="submit">
+            التالي
+            <MaterialIcon :model="{ n: 'arrow_back' }" />
+          </button>
+        </div>
         <p class="courier-help">
           صور المستمسكات للمعاينة خلال الجلسة فقط؛ لا تُرفع إلى خادم.
         </p>
@@ -205,3 +203,30 @@ const { ui } = useViewState();
     </div>
   </section>
 </template>
+
+<style scoped>
+.courier-step-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.courier-step-actions .courier-create {
+  grid-column: 2;
+  margin: 0;
+}
+.courier-previous {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 54px;
+  border: 1px solid #f47d2f80;
+  border-radius: 14px;
+  background: #f47d2f12;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+</style>

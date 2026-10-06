@@ -1435,6 +1435,7 @@ export function useWasel(application = currentApplication()) {
         );
         ui.formRevision++;
         courierRegistrationView();
+        window.scrollTo(0, 0);
       } else if (a === "courier-edit") {
         closeModal();
         courierRegistrationView();
