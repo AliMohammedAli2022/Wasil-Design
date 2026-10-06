@@ -22,7 +22,7 @@ test("iraq demo credentials select the populated merchant and reject a wrong pas
     api("/api/login", { role: "merchant", phone: "iraq", password: "wrong" }),
   );
   await assert.rejects(
-    api("/api/login", { role: "courier", phone: "iraq", password: "iraq" }),
+    api("/api/login", { role: "courier", phone: "iraq", password: "" }),
   );
   const result = await api("/api/login", {
     role: "merchant",
@@ -189,7 +189,7 @@ test("a draft is saved locally and appears for the courier after publication", a
 });
 test("username sign-in selects the correct account and rejects unknown credentials", async () => {
   const { api } = await setup();
-  for (const role of ["merchant", "free", "courier"]) {
+  for (const role of ["merchant", "free"]) {
     const { user } = await api("/api/login", {
       role,
       username: "iraq",
@@ -208,6 +208,24 @@ test("username sign-in selects the correct account and rejects unknown credentia
         /اسم المستخدم أو كلمة المرور/,
       );
   }
+});
+
+test("courier preview accepts names and phones with any nonempty password without falling back to another account", async () => {
+  const { api } = await setup();
+  for (const identifier of ["حسن محمد علي", "  حسن  محمد علي  ", "07700000201", "٠٧٧٠٠٠٠٠٢٠١"]) {
+    for (const password of ["123", "1", "abc", "كلمة مرور"]) {
+      const { user } = await api("/api/login", { role: "courier", identifier, password });
+      assert.equal(user.id, "COU-HASSAN-MOHAMMED-ALI");
+    }
+  }
+  for (const key of ["username", "phone"])
+    assert.equal((await api("/api/login", { role: "courier", [key]: "iraq", password: "x" })).user.id, "COU-DEMO");
+  for (const password of ["", "   ", undefined])
+    await assert.rejects(api("/api/login", { role: "courier", identifier: "حسن محمد علي", password }), /كلمة المرور/);
+  for (const identifier of ["اسم غير مسجل", "07799999999"])
+    await assert.rejects(api("/api/login", { role: "courier", identifier, password: "123" }), /اسم المستخدم غير موجود/);
+  const { user } = await api("/api/login", { role: "courier" });
+  assert.equal(user.id, "COU-DEMO");
 });
 
 test("registration and profile edits do not persist passwords or documents", async () => {

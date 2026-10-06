@@ -12,8 +12,12 @@ defineProps({ model: { type: Object, required: true } });
         name: 'newPassword',
         label: 'كلمة المرور الجديدة',
         value: '',
-        attrs:
-          'type=&quot;password&quot; required minlength=&quot;8&quot; autocomplete=&quot;new-password&quot;',
+        attrs: {
+          type: 'password',
+          required: true,
+          autocomplete: 'new-password',
+          minlength: model.courier ? undefined : 8,
+        },
       }"
     />
     <FormInput
@@ -21,8 +25,12 @@ defineProps({ model: { type: Object, required: true } });
         name: 'confirmPassword',
         label: 'تأكيد كلمة المرور',
         value: '',
-        attrs:
-          'type=&quot;password&quot; required minlength=&quot;8&quot; autocomplete=&quot;new-password&quot;',
+        attrs: {
+          type: 'password',
+          required: true,
+          autocomplete: 'new-password',
+          minlength: model.courier ? undefined : 8,
+        },
       }"
     />
     <button type="submit" class="primary-button">التحقق من كلمة المرور</button>

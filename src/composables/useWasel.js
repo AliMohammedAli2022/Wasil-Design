@@ -792,7 +792,7 @@ export function useWasel(application = currentApplication()) {
         modal(
           "تغيير كلمة مرور الحساب",
           createView(PasswordChangeDialog, {
-            model: {},
+            model: { courier: state.S.user.role === "courier" },
           }),
         );
       } else if (a === "preferences") {
@@ -880,24 +880,16 @@ export function useWasel(application = currentApplication()) {
         }
       if (form.id === "login-form") {
         const identifier = f.identifier.trim();
-        if (!identifier || !f.password)
+        if (!identifier || !f.password?.trim())
           throw Error("أدخل اسم المستخدم وكلمة المرور");
-        if (f.role === "courier" && identifier !== "iraq") {
-          const problem = phoneError(identifier);
-          if (problem) throw Error(problem);
-        }
         await login(
           f.role,
-          f.role === "courier"
-            ? {
-                phone:
-                  identifier === "iraq" ? identifier : phoneDigits(identifier),
-              }
-            : { username: identifier },
+          f.role === "courier" ? { identifier } : { username: identifier },
           f.password,
         );
       } else if (form.id === "password-change-form") {
-        if (f.newPassword.length < 8)
+        if (!f.newPassword?.trim()) throw Error("أدخل كلمة المرور");
+        if (state.S.user.role !== "courier" && f.newPassword.length < 8)
           throw Error("كلمة المرور يجب أن تكون 8 أحرف على الأقل");
         if (f.newPassword !== f.confirmPassword)
           throw Error("كلمتا المرور غير متطابقتين");

@@ -16,6 +16,7 @@ import { normalizeFreeDeliveryAccounts } from "./freeDelivery.js";
 import { addPreviewCouriers } from "./previewCouriers.js";
 import { populateCourierScenarios } from "./courierScenarios.js";
 import { TEMPORARY_PASSWORD } from "./previewCredentials.js";
+import { phoneDigits } from "./formFields.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
 import { accountType, workflowRole } from "./accounts.js";
@@ -1222,6 +1223,52 @@ export function createDemoApi(
         allowedAccounts.includes(p.role),
         "نوع الحساب غير متاح في هذا التطبيق",
       );
+      // Temporary courier preview: identify the account, accept any nonempty password.
+      if (
+        p.role === "courier" &&
+        ["identifier", "username", "phone"].some((key) => Object.hasOwn(p, key))
+      ) {
+        const normalize = (value) =>
+          String(value ?? "")
+            .trim()
+            .replace(/\s+/g, " ")
+            .toLowerCase();
+        const identifier = normalize(p.identifier ?? p.username ?? p.phone);
+        const internalPhoneLogin =
+          !Object.hasOwn(p, "password") &&
+          !Object.hasOwn(p, "identifier") &&
+          !Object.hasOwn(p, "username");
+        must(
+          identifier &&
+            (internalPhoneLogin ||
+              (typeof p.password === "string" && p.password.trim())),
+          "أدخل اسم المستخدم وكلمة المرور",
+        );
+        const phone = /^[0-9٠-٩۰-۹+() -]+$/.test(identifier)
+          ? phoneDigits(identifier)
+          : null;
+        const matches = data.users.filter(
+          (u) =>
+            accountType(u) === "courier" &&
+            ((identifier === "iraq" && u.id === "COU-DEMO") ||
+              normalize(u.username || u.name) === identifier ||
+              (phone && u.phone === phone)),
+        );
+        must(
+          matches.length > 0,
+          "اسم المستخدم غير موجود؛ أدخل اسم الحساب أو رقم هاتفه المسجل",
+        );
+        must(
+          matches.length === 1,
+          "يوجد أكثر من حساب بهذا الاسم؛ استخدم رقم الهاتف المسجل",
+        );
+        const u = matches[0];
+        currentId = u.id;
+        populateCourierScenarios(data, u);
+        data.lastByRole.courier = u.id;
+        persist();
+        return { user: copy(u) };
+      }
       // Public demo credentials select the sample for the chosen account type.
       if (Object.hasOwn(p, "password"))
         must(

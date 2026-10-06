@@ -19,7 +19,6 @@ defineProps({ model: { type: Object, required: true } });
         type="password"
         :value="model.r[model.name] || ''"
         :placeholder="model.label"
-        minlength="3"
         :required="true"
         autocomplete="new-password"
       />
