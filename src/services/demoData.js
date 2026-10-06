@@ -5,6 +5,7 @@ import { addFreeDeliveryDemo } from "./freeDeliveryDemo.js";
 import { statusLabel } from "./orderStatuses.js";
 import { populatePreviewAccounts } from "./previewContent.js";
 import { normalizeFreeDeliveryAccounts } from "./freeDelivery.js";
+import { addPreviewCouriers } from "./previewCouriers.js";
 export { statuses } from "./orderStatuses.js";
 const workflowStages = [
   "draft",
@@ -372,6 +373,7 @@ export function createDemoData() {
     lastByRole: { merchant: merchant.id, courier: courier.id },
   };
   addFreeDeliveryDemo(data);
+  addPreviewCouriers(data);
   populatePreviewAccounts(data);
   normalizeFreeDeliveryAccounts(data);
   return data;

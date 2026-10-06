@@ -13,6 +13,7 @@ import { removeDeviceDraftStorage } from "./storageMigrations.js";
 import { refreshSampleContent } from "./sampleContent.js";
 import { populatePreviewAccounts } from "./previewContent.js";
 import { normalizeFreeDeliveryAccounts } from "./freeDelivery.js";
+import { addPreviewCouriers } from "./previewCouriers.js";
 import { TEMPORARY_PASSWORD } from "./previewCredentials.js";
 import { capacityProblem } from "./reservationCapacity.js";
 import { verifyDemoRegistrationCode } from "./registrationVerification.js";
@@ -69,6 +70,7 @@ export function createDemoApi(
       data = saved;
   } catch {}
   migrateOrderNumbers(data);
+  addPreviewCouriers(data);
   if (!data.expandedDemoCatalog) {
     const sample = createDemoData();
     if (data.users.some((u) => u.id === "MER-DEMO")) {
