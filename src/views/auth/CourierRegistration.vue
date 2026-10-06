@@ -43,7 +43,7 @@ const { ui } = useViewState();
             :content="
               model.field(
                 'name',
-                'الاسم الكامل',
+                'الاسم',
                 'person',
                 'text',
                 'autocomplete=&quot;name&quot; maxlength=&quot;80&quot;',
@@ -53,11 +53,11 @@ const { ui } = useViewState();
           <ViewContent
             :content="
               model.field(
-                'address',
-                'العنوان',
-                'location_on',
+                'phone',
+                'رقم الموبايل',
+                'call',
                 'text',
-                'autocomplete=&quot;street-address&quot; maxlength=&quot;200&quot;',
+                `${model.PHONE_ATTRIBUTES} autocomplete=&quot;tel&quot;`,
               )
             "
           />
@@ -99,11 +99,11 @@ const { ui } = useViewState();
           <ViewContent
             :content="
               model.field(
-                'phone',
-                'رقم الهاتف',
-                'call',
+                'address',
+                'العنوان و أقرب نقطة دالة',
+                'location_on',
                 'text',
-                `${model.PHONE_ATTRIBUTES} autocomplete=&quot;tel&quot;`,
+                'autocomplete=&quot;street-address&quot; maxlength=&quot;200&quot;',
               )
             "
           />

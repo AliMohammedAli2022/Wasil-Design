@@ -215,6 +215,7 @@ export function useWasel(application = currentApplication()) {
   }
   function courierRegistrationView() {
     writeRoute("courier", "register");
+    ui.formError = "";
     ui.auth = true;
     ui.page = "CourierRegistration";
     ui.revision++;
@@ -903,9 +904,18 @@ export function useWasel(application = currentApplication()) {
         form.reset();
         closeModal();
         toast("كلمة المرور صالحة. الحفظ الفعلي متاح بعد ربط الخادم.");
-      } else if (form.id === "courier-register-form")
-        reviewCourierRegistration();
-      else if (form.id === "order-form") {
+      } else if (form.id === "courier-register-form") {
+        gatherCourier();
+        const r = state.registration;
+        if (r.password !== r.confirmPassword)
+          throw Error("كلمة المرور وتأكيدها غير متطابقين");
+        if (Number(r.step || 0) < 2) {
+          r.step = Number(r.step || 0) + 1;
+          ui.formRevision++;
+          courierRegistrationView();
+          window.scrollTo(0, 0);
+        } else reviewCourierRegistration();
+      } else if (form.id === "order-form") {
         gatherOrder(form);
         state.wizard.step++;
         ui.formRevision++;
@@ -1299,10 +1309,11 @@ export function useWasel(application = currentApplication()) {
     if (!f) return;
     for (const [k, v] of new FormData(f))
       if (typeof v === "string") state.registration[k] = v;
-    state.registration.location = {
-      lat: Number(f.elements.lat.value),
-      lng: Number(f.elements.lng.value),
-    };
+    if (Number(state.registration.step) === 2)
+      state.registration.location = addressLocation(
+        f.elements.lat.value,
+        f.elements.lng.value,
+      );
   }
   function stopDocumentCamera() {
     ui.cameraReady = false;
@@ -1427,6 +1438,7 @@ export function useWasel(application = currentApplication()) {
           0,
           (state.registration.step || 0) - 1,
         );
+        ui.formRevision++;
         courierRegistrationView();
       } else if (a === "courier-edit") {
         closeModal();
