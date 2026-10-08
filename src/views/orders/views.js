@@ -559,7 +559,7 @@ export function createOrdersViews(context) {
         model: {},
       });
     modal(
-      op === "pickup" ? "تأكيد استلام الطلب" : "إجراء على " + o.id,
+      op === "pickup" ? "تأكيد الاستلام" : "إجراء على " + o.id,
       createView(OrderActionForm, {
         model: {
           o,
@@ -568,6 +568,7 @@ export function createOrdersViews(context) {
           fields,
         },
       }),
+      op === "pickup" ? "رقم الطلب " + o.id : "",
     );
   }
   function mapPlot(groups) {

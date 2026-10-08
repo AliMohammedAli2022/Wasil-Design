@@ -137,6 +137,7 @@ onBeforeUnmount(() => document.body.classList.remove("auth-mode"));
     </nav>
     <AppDialog
       :title="ui.dialogTitle"
+      :subtitle="ui.dialogSubtitle"
       :content="ui.dialogContent"
       :error="ui.formError"
       @close="closeModal"

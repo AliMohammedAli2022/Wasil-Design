@@ -150,6 +150,7 @@ export function useWasel(application = currentApplication()) {
     revision: 0,
     formRevision: 0,
     dialogTitle: "",
+    dialogSubtitle: "",
     dialogContent: null,
     cameraContent: null,
     cameraError: "",
@@ -287,9 +288,10 @@ export function useWasel(application = currentApplication()) {
   async function api(url, data) {
     return frontendApi(url, data);
   }
-  function modal(title, content) {
+  function modal(title, content, subtitle = "") {
     ui.formError = "";
     ui.dialogTitle = title;
+    ui.dialogSubtitle = subtitle;
     ui.dialogContent = content;
     nextTick(() => $("#app-dialog")?.showModal());
   }
