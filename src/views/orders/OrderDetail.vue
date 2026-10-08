@@ -275,7 +275,10 @@ defineProps({ model: { type: Object, required: true } });
       <img :src="model.o.photo" alt="صورة الشحنة" /></div
   ></template>
 
-  <div class="order-actions">
+  <div
+    class="order-actions"
+    :class="{ 'courier-order-actions': model.state.S.user.role === 'courier' }"
+  >
     <template v-for="[action, label] in model.availableActions(model.o)"
       ><ActionButton
         :model="{
@@ -327,3 +330,26 @@ defineProps({ model: { type: Object, required: true } });
     >
   </ol>
 </template>
+<style scoped>
+.order-actions.courier-order-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+}
+.courier-order-actions > :deep(button) {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 12px 10px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.courier-order-actions > :deep(button:last-child:nth-child(odd)) {
+  grid-column: 2 / span 2;
+}
+</style>
