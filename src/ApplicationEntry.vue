@@ -5,7 +5,7 @@ import LocalPortal from "./components/LocalPortal.vue";
 import TermsOnboarding from "./components/TermsOnboarding.vue";
 import { currentApplication } from "./services/accounts.js";
 import { termsConsent } from "./services/termsConsent.js";
-import { routeHash } from "./services/routes.js";
+import { parseRoute, routeHash } from "./services/routes.js";
 
 const application = currentApplication();
 const entryPage = application.id === "courier" ? "login" : "register";
@@ -16,6 +16,16 @@ const portal = ref(
     new URLSearchParams(location.search).get("portal"),
   ),
 );
+// A saved registration URL must not become the courier's launch screen.
+// Registration remains available through the login screen during this visit.
+if (
+  accepted.value &&
+  !portal.value &&
+  application.id === "courier" &&
+  parseRoute(location.hash, application.accounts).page === "register"
+) {
+  history.replaceState(null, "", routeHash(application.defaultAccount, "login"));
+}
 function accept() {
   const { persisted } = termsConsent.accept(application.id);
   if (!persisted)
