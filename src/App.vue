@@ -3,6 +3,7 @@ import { watch, onBeforeUnmount } from "vue";
 import { useWasel } from "./composables/useWasel.js";
 import { accountType } from "./services/accounts.js";
 import InstallBanner from "./components/InstallBanner.vue";
+import PullToRefresh from "./components/PullToRefresh.vue";
 import AppDialog from "./components/AppDialog.vue";
 import ViewContent from "./components/ViewContent.vue";
 import WorkspaceTools from "./components/WorkspaceTools.vue";
@@ -42,6 +43,16 @@ onBeforeUnmount(() => document.body.classList.remove("auth-mode"));
     @input="dispatch('input', $event)"
     @keydown="dispatch('keydown', $event)"
   >
+    <PullToRefresh
+      :enabled="
+        !!state.S &&
+        !ui.auth &&
+        !ui.splash &&
+        !state.wizard &&
+        !state.registration
+      "
+      :refresh="refresh"
+    />
     <InstallBanner v-if="ui.installVisible && !ui.splash && !ui.installed" />
     <header
       v-if="!ui.auth && state.screen === 'home' && !state.registration"

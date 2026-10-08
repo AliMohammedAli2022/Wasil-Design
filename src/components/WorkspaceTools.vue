@@ -98,7 +98,7 @@ async function shareOutlet(outlet) {
 const labels = computed(() => ({
   addresses: "عناويني",
   customers: accountType(u.value) === "free" ? "المستلمين" : "زبائني",
-  batch: "الاستلام الجماعي",
+  ...(u.value.role === "courier" ? {} : { batch: "الاستلام الجماعي" }),
   support: "المساعدة والدعم",
   outlets: "منافذ الشحن",
 }));
@@ -167,6 +167,8 @@ async function open(p) {
   adminPage.value = props.portal === "outlet" ? "topup" : "";
   reset();
   panel.value.showModal();
+  await nextTick();
+  panel.value.scrollTop = 0;
   if (p === "admin")
     await run(async () => {
       admin.value = await api("/api/local-admin", { action: "view" });

@@ -41,9 +41,8 @@ self.addEventListener("fetch", (event) => {
     url.origin !== BASE.origin ||
     !url.pathname.startsWith(BASE.pathname) ||
     relative.startsWith("api/") ||
-    // The parent application must never cache or serve the courier app's entry.
-    relative.startsWith("courier/") ||
-    relative === "courier"
+    // Child apps own their entry, assets and offline cache independently.
+    /^(merchant|free|courier)(\/|$)/.test(relative)
   )
     return;
   event.respondWith(
@@ -63,7 +62,7 @@ self.addEventListener("fetch", (event) => {
         if (saved) return saved;
         if (
           event.request.mode === "navigate" &&
-          ["", "index.html", "merchant/", "merchant"].includes(relative)
+          ["", "index.html"].includes(relative)
         )
           return (
             (await cache.match(new URL("index.html", BASE).href)) ||

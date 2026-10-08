@@ -14,6 +14,65 @@ async function workspace() {
   return { storage, key: DEMO_STORAGE_KEY, createDemoApi };
 }
 
+test("dedicated entry URLs own identity even when old parent HTML names another app", async () => {
+  const { currentApplication } = await import("./src/services/accounts.js");
+  const { parseRoute } = await import("./src/services/routes.js");
+  for (const role of ["merchant", "free", "courier"]) {
+    for (const prefix of ["/", "/Wasil-Design/"]) {
+      for (const suffix of ["", "/", "/index.html"]) {
+        const app = currentApplication(prefix + role + suffix, "merchant");
+        assert.equal(app.id, role);
+        assert.deepEqual(app.accounts, [role]);
+        assert.equal(app.defaultAccount, role);
+        for (const other of ["merchant", "free", "courier"].filter(
+          (r) => r !== role,
+        ))
+          assert.equal(parseRoute(`#/${other}/home`, app.accounts).role, null);
+      }
+    }
+  }
+  assert.deepEqual(currentApplication("/Wasil-Design/", "merchant").accounts, [
+    "merchant",
+    "free",
+  ]);
+});
+
+test("dedicated applications keep independent signed-in users while sharing order updates", async () => {
+  const { storage, createDemoApi } = await workspace();
+  const { accountType } = await import("./src/services/accounts.js");
+  const sessions = Object.fromEntries(
+    ["merchant", "free", "courier"].map((role) => [
+      role,
+      createDemoApi(storage, [role]),
+    ]),
+  );
+  for (const [role, api] of Object.entries(sessions))
+    await api("/api/login", { role });
+  for (const [role, api] of Object.entries(sessions)) {
+    assert.equal(accountType((await api("/api/state")).user), role);
+    for (const other of Object.keys(sessions).filter((r) => r !== role))
+      await assert.rejects(api("/api/login", { role: other }));
+    assert.equal(accountType((await api("/api/state")).user), role);
+  }
+});
+
+test("each dedicated installable app resolves its start, scope and identity to its own path", () => {
+  const names = new Set(),
+    ids = new Set();
+  for (const role of ["merchant", "free", "courier"]) {
+    const base = `https://wasel.test/Wasil-Design/${role}/`;
+    const manifest = JSON.parse(
+      fs.readFileSync(`dist/${role}/manifest.webmanifest`, "utf8"),
+    );
+    assert.equal(new URL(manifest.scope, base).href, base);
+    assert.equal(new URL(manifest.start_url, base).href, base);
+    ids.add(new URL(manifest.id, base).href);
+    names.add(manifest.name);
+  }
+  assert.equal(ids.size, 3);
+  assert.equal(names.size, 3);
+});
+
 test("free account copies merchant features with independent orders, balances, contacts and sessions", async () => {
   const { storage, createDemoApi } = await workspace();
   const merchant = createDemoApi(storage, ["merchant", "free"]);

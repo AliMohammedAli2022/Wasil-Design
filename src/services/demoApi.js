@@ -192,8 +192,9 @@ export function createDemoApi(
     ).slice(0, 10);
   const now = () => new Date().toISOString();
   const user = () =>
-    data.users.find((u) => u.id === currentId) ||
-    fail("اختر حساباً للمعاينة", 401);
+    data.users.find(
+      (u) => u.id === currentId && allowedAccounts.includes(accountType(u)),
+    ) || fail("اختر حساباً للمعاينة", 401);
   const online = () => globalThis.navigator?.onLine !== false;
   let lastSavedRaw;
   try {

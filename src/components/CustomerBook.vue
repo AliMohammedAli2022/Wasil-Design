@@ -48,8 +48,8 @@ async function navigate(target) {
   view.value = target;
   error.value = "";
   await nextTick();
-  heading.value?.focus();
-  heading.value?.scrollIntoView({ block: "nearest" });
+  heading.value?.focus({ preventScroll: true });
+  heading.value?.closest("dialog")?.scrollTo({ top: 0, behavior: "instant" });
 }
 function details(customer) {
   selectedId.value = customer.id;

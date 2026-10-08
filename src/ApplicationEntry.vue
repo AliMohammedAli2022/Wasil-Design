@@ -8,7 +8,7 @@ import { termsConsent } from "./services/termsConsent.js";
 import { parseRoute, routeHash } from "./services/routes.js";
 
 const application = currentApplication();
-const entryPage = application.id === "courier" ? "login" : "register";
+const entryPage = application.defaultAccount ? "login" : "register";
 const accepted = ref(Boolean(termsConsent.read(application.id)));
 const storageNotice = ref("");
 const portal = ref(
@@ -16,15 +16,19 @@ const portal = ref(
     new URLSearchParams(location.search).get("portal"),
   ),
 );
-// A saved registration URL must not become the courier's launch screen.
+// A saved registration URL must not become a dedicated app's launch screen.
 // Registration remains available through the login screen during this visit.
 if (
   accepted.value &&
   !portal.value &&
-  application.id === "courier" &&
+  application.defaultAccount &&
   parseRoute(location.hash, application.accounts).page === "register"
 ) {
-  history.replaceState(null, "", routeHash(application.defaultAccount, "login"));
+  history.replaceState(
+    null,
+    "",
+    routeHash(application.defaultAccount, "login"),
+  );
 }
 function accept() {
   const { persisted } = termsConsent.accept(application.id);

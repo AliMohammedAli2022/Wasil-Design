@@ -160,8 +160,12 @@ button,a,input,select,textarea{touch-action:pan-y}
 #app-dialog .dialog-head,.settings-dialog .dialog-head{align-items:center;gap:12px;margin-bottom:20px}
 #app-dialog .dialog-head h2,.settings-dialog .dialog-head h2{min-width:0;overflow-wrap:anywhere;font-size:18px}
 #dialog-content{min-width:0;overflow-wrap:anywhere}
-#dialog-content .detail-row{gap:12px;padding-block:10px;border-bottom:1px solid #00567a15}
+#dialog-content .detail-row{gap:12px;padding:12px 14px;border-bottom:1px solid #00567a15}
 #dialog-content .detail-row strong{text-align:end}
+.wasel-app :is(.detail-row,.review-group){padding:12px 14px;box-sizing:border-box}
+.wasel-app .detail-row>span{max-width:45%;overflow-wrap:anywhere}
+.wasel-app .detail-row>strong{min-width:0}
+.wasel-app :is(.status-note,.profile-lock){padding:14px 16px;line-height:1.85;overflow-wrap:anywhere}
 #dialog-content .order-actions{gap:8px;margin-block:18px}
 html[data-theme=dark] #app-dialog,html[data-theme=dark] .settings-dialog{background:linear-gradient(145deg,#193446,#102938)!important;border:1px solid #365565!important;color:#e5f1f5;scrollbar-color:#547080 transparent}
 html[data-theme=dark] #dialog-content .detail-row{border-color:#365565}

@@ -34,6 +34,17 @@ export function initInteractions() {
     attributeFilter: ["open"],
   });
   document.addEventListener("toggle", sync, true);
+  document.addEventListener(
+    "toggle",
+    (event) => {
+      if (
+        event.newState === "open" &&
+        event.target instanceof HTMLDialogElement
+      )
+        event.target.scrollTop = 0;
+    },
+    true,
+  );
   const insidePanel = (target) =>
     target instanceof Element &&
     target.closest("dialog[open], [popover]:popover-open");

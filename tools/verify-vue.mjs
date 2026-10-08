@@ -1,7 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import assert from "node:assert/strict";
-for (const entry of ["index.html", "courier/index.html"]) {
+for (const entry of [
+  "index.html",
+  "merchant/index.html",
+  "free/index.html",
+  "courier/index.html",
+]) {
   const html = fs.readFileSync(path.join("dist", entry), "utf8");
   assert.ok(html.includes('id="wasel-root"'));
   for (const [, url] of html.matchAll(/(?:href|src)="([^"?#]+)[^"]*"/g)) {

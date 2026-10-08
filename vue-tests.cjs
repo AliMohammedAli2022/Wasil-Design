@@ -467,28 +467,28 @@ test("built PWA caches only public files and supports offline role routes", asyn
   let response;
   handlers.fetch({
     request: {
-      url: "https://wasel.test/merchant/",
+      url: "https://wasel.test/",
       method: "GET",
       mode: "navigate",
     },
     respondWith: (p) => (response = p),
   });
   assert.equal(await (await response).text(), "index.html");
-  response = undefined;
-  handlers.fetch({
-    request: {
-      url: "https://wasel.test/courier/",
-      method: "GET",
-      mode: "navigate",
-    },
-    respondWith: (p) => (response = p),
-  });
-  assert.equal(
-    response,
-    undefined,
-    "parent worker must not serve the courier application",
-  );
-  assert.ok(precache.every((url) => !url.includes("/courier/")));
+  for (const role of ["merchant", "free", "courier"]) {
+    for (const suffix of ["", "/", "/index.html", "/assets/fonts.css"]) {
+      response = undefined;
+      handlers.fetch({
+        request: {
+          url: `https://wasel.test/${role}${suffix}`,
+          method: "GET",
+          mode: "navigate",
+        },
+        respondWith: (p) => (response = p),
+      });
+      assert.equal(response, undefined, `parent worker must not serve ${role}`);
+    }
+    assert.ok(precache.every((url) => !url.includes(`/${role}/`)));
+  }
   response = undefined;
   handlers.fetch({
     request: { url: "https://wasel.test/api/state", method: "GET" },

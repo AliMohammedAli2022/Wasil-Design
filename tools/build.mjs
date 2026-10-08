@@ -16,14 +16,20 @@ function filesIn(folder) {
   });
 }
 
-for (const application of ["merchant", "courier"]) {
-  const courier = application === "courier";
-  await build({ mode: courier ? "courier" : "production" });
-  const dir = path.join(output, courier ? "courier" : "");
+const applicationNames = {
+  "": "التاجر والتوصيل الحر",
+  merchant: "التاجر",
+  free: "التوصيل الحر",
+  courier: "المندوب",
+};
+// Build the parent first so clearing its output cannot remove child applications.
+for (const [application, name] of Object.entries(applicationNames)) {
+  await build({ mode: application || "production" });
+  const dir = path.join(output, application);
   const manifestPath = path.join(dir, "manifest.webmanifest");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.name = courier ? "واصل — المندوب" : "واصل — التاجر والتوصيل الحر";
-  manifest.short_name = courier ? "واصل المندوب" : "واصل";
+  manifest.name = "واصل — " + name;
+  manifest.short_name = application ? "واصل " + name : "واصل";
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
 
   const files = filesIn(dir).map((file) =>
@@ -57,7 +63,12 @@ if (pages) {
   fs.writeFileSync(".nojekyll", "");
   const currentAssets = new Set(files);
   let removed = 0;
-  for (const folder of ["assets", "courier/assets"]) {
+  for (const folder of [
+    "assets",
+    "merchant/assets",
+    "free/assets",
+    "courier/assets",
+  ]) {
     for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
       const file = `${folder}/${entry.name}`;
       if (

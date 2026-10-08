@@ -38,6 +38,7 @@ import {
   nextTick,
   onMounted,
   onBeforeUnmount,
+  watch,
 } from "vue";
 import {
   clone,
@@ -163,6 +164,28 @@ export function useWasel(application = currentApplication()) {
     loginPassword: "",
     loginIdentifier: "",
   });
+  // Form revisions also notify us about steps in the shallow wizard state.
+  // Background refreshes and editing a field on the same step keep their position.
+  watch(
+    () => {
+      ui.formRevision;
+      return [
+        ui.page,
+        ui.auth,
+        state.screen,
+        state.authRole,
+        state.wizard?.step,
+        state.registration?.step,
+      ].join(":");
+    },
+    () =>
+      nextTick(() =>
+        requestAnimationFrame(() =>
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" }),
+        ),
+      ),
+    { flush: "post" },
+  );
   function loginPage(error = "") {
     writeRoute(state.authRole, state.authIntent);
     ui.passwordVisible = false;
@@ -293,7 +316,11 @@ export function useWasel(application = currentApplication()) {
     ui.dialogTitle = title;
     ui.dialogSubtitle = subtitle;
     ui.dialogContent = content;
-    nextTick(() => $("#app-dialog")?.showModal());
+    nextTick(() => {
+      $("#app-dialog")?.showModal();
+      const content = $("#dialog-content");
+      if (content) content.scrollTop = 0;
+    });
   }
   function closeModal() {
     $("#app-dialog")?.close();
