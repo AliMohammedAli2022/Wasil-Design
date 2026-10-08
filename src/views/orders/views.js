@@ -559,7 +559,7 @@ export function createOrdersViews(context) {
         model: {},
       });
     modal(
-      "إجراء على " + o.id,
+      op === "pickup" ? "تأكيد استلام الطلب" : "إجراء على " + o.id,
       createView(OrderActionForm, {
         model: {
           o,
