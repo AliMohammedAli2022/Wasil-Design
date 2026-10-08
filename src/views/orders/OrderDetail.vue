@@ -198,7 +198,11 @@ defineProps({ model: { type: Object, required: true } });
       :content="model.maps(model.o.sender.location, 'موقع الاستلام')"
     />
     <template v-if="!model.isOwn &amp;&amp; model.o.sender.phone"
-      ><a :href="'tel:' + model.o.sender.phone">اتصال بالمرسل</a>
+      ><a
+        v-if="model.state.S.user.role !== 'courier'"
+        :href="'tel:' + model.o.sender.phone"
+        >اتصال بالمرسل</a
+      >
       <a
         target="_blank"
         rel="noopener noreferrer"
@@ -210,7 +214,8 @@ defineProps({ model: { type: Object, required: true } });
     <ViewContent
       :content="model.maps(model.o.recipient.location, 'موقع التسليم')"
     />
-    <template v-if="model.o.courierInfo"
+    <template
+      v-if="model.o.courierInfo &amp;&amp; model.state.S.user.role !== 'courier'"
       ><a :href="'tel:' + model.o.courierInfo.phone"
         ><MaterialIcon
           :model="{
