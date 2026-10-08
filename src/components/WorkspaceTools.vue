@@ -101,7 +101,6 @@ const labels = computed(() => ({
   batch: "الاستلام الجماعي",
   support: "المساعدة والدعم",
   outlets: "منافذ الشحن",
-  admin: "معاينة الإدارة المحلية",
 }));
 const nearbyOutlets = computed(() =>
   props.snapshot.outlets
@@ -195,7 +194,7 @@ async function save() {
     if (page.value === "support") {
       await api("/api/support", form);
       reset();
-      message.value = "تم فتح التذكرة محلياً؛ الرد متاح من معاينة الإدارة.";
+      message.value = "تم فتح تذكرة الدعم.";
     }
     if (page.value === "batch") {
       const result = await api(
@@ -308,7 +307,9 @@ const settingsLabels = {
             ? adminPages[adminPage]
             : portal === "outlet"
               ? "واجهة منفذ الشحن"
-              : labels[page]
+              : page === "admin"
+                ? "الإدارة"
+                : labels[page]
         }}
       </h2>
       <button
