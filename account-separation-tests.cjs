@@ -14,19 +14,22 @@ async function workspace() {
   return { storage, key: DEMO_STORAGE_KEY, createDemoApi };
 }
 
-test("dedicated entry URLs own identity even when old parent HTML names another app", async () => {
+test("merchant and free share the chooser while courier URLs enforce their own identity", async () => {
   const { currentApplication } = await import("./src/services/accounts.js");
   const { parseRoute } = await import("./src/services/routes.js");
   for (const role of ["merchant", "free", "courier"]) {
     for (const prefix of ["/", "/Wasil-Design/"]) {
       for (const suffix of ["", "/", "/index.html"]) {
         const app = currentApplication(prefix + role + suffix, "merchant");
-        assert.equal(app.id, role);
-        assert.deepEqual(app.accounts, [role]);
-        assert.equal(app.defaultAccount, role);
-        for (const other of ["merchant", "free", "courier"].filter(
-          (r) => r !== role,
-        ))
+        assert.equal(app.id, role === "courier" ? "courier" : "merchant");
+        assert.deepEqual(
+          app.accounts,
+          role === "courier" ? ["courier"] : ["merchant", "free"],
+        );
+        assert.equal(app.defaultAccount, role === "courier" ? "courier" : null);
+        for (const other of role === "courier"
+          ? ["merchant", "free"]
+          : ["courier"])
           assert.equal(parseRoute(`#/${other}/home`, app.accounts).role, null);
       }
     }
@@ -56,21 +59,68 @@ test("dedicated applications keep independent signed-in users while sharing orde
   }
 });
 
-test("each dedicated installable app resolves its start, scope and identity to its own path", () => {
+test("only the combined app and courier have installable identities; old links redirect to the chooser", () => {
   const names = new Set(),
     ids = new Set();
-  for (const role of ["merchant", "free", "courier"]) {
-    const base = `https://wasel.test/Wasil-Design/${role}/`;
+  for (const role of ["", "courier/"]) {
+    const base = `https://wasel.test/Wasil-Design/${role}`;
     const manifest = JSON.parse(
-      fs.readFileSync(`dist/${role}/manifest.webmanifest`, "utf8"),
+      fs.readFileSync(`dist/${role}manifest.webmanifest`, "utf8"),
     );
     assert.equal(new URL(manifest.scope, base).href, base);
     assert.equal(new URL(manifest.start_url, base).href, base);
     ids.add(new URL(manifest.id, base).href);
     names.add(manifest.name);
   }
-  assert.equal(ids.size, 3);
-  assert.equal(names.size, 3);
+  assert.equal(ids.size, 2);
+  assert.equal(names.size, 2);
+  for (const role of ["merchant", "free"]) {
+    assert.match(
+      fs.readFileSync(`dist/${role}/index.html`, "utf8"),
+      /0;url=\.\.\/#\/choose/,
+    );
+    assert.equal(fs.existsSync(`dist/${role}/manifest.webmanifest`), false);
+  }
+});
+
+test("retiring separate entries removes only their cache and registration", async () => {
+  for (const role of ["merchant", "free"]) {
+    const handlers = {},
+      deleted = [];
+    let unregistered = false;
+    const prefix = `wasel-vue-/Wasil-Design/${role}/-`;
+    vm.runInNewContext(fs.readFileSync("src/retired-entry-worker.js", "utf8"), {
+      URL,
+      caches: {
+        keys: async () => [
+          prefix + "old",
+          "wasel-vue-/Wasil-Design/-parent",
+          "wasel-vue-/Wasil-Design/courier/-courier",
+        ],
+        delete: async (key) => deleted.push(key),
+      },
+      self: {
+        location: { href: `https://wasel.test/Wasil-Design/${role}/sw.js` },
+        registration: {
+          unregister: async () => {
+            unregistered = true;
+          },
+        },
+        addEventListener: (type, fn) => {
+          handlers[type] = fn;
+        },
+      },
+    });
+    let done;
+    handlers.activate({
+      waitUntil: (promise) => {
+        done = promise;
+      },
+    });
+    await done;
+    assert.deepEqual(deleted, [prefix + "old"]);
+    assert.equal(unregistered, true);
+  }
 });
 
 test("free account copies merchant features with independent orders, balances, contacts and sessions", async () => {

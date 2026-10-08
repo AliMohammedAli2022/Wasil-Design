@@ -1,17 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import assert from "node:assert/strict";
-for (const entry of [
-  "index.html",
-  "merchant/index.html",
-  "free/index.html",
-  "courier/index.html",
-]) {
+for (const entry of ["index.html", "courier/index.html"]) {
   const html = fs.readFileSync(path.join("dist", entry), "utf8");
   assert.ok(html.includes('id="wasel-root"'));
   for (const [, url] of html.matchAll(/(?:href|src)="([^"?#]+)[^"]*"/g)) {
     assert.ok(fs.existsSync(path.join("dist", url)), url);
   }
+}
+for (const entry of ["merchant", "free"]) {
+  assert.ok(
+    fs
+      .readFileSync(`dist/${entry}/index.html`, "utf8")
+      .includes("0;url=../#/choose"),
+  );
+  assert.ok(!fs.existsSync(`dist/${entry}/manifest.webmanifest`));
 }
 function inspect(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

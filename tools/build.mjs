@@ -18,8 +18,6 @@ function filesIn(folder) {
 
 const applicationNames = {
   "": "التاجر والتوصيل الحر",
-  merchant: "التاجر",
-  free: "التوصيل الحر",
   courier: "المندوب",
 };
 // Build the parent first so clearing its output cannot remove child applications.
@@ -48,6 +46,23 @@ for (const [application, name] of Object.entries(applicationNames)) {
   );
 }
 
+// Previously shared links keep working, but now lead to the one account chooser.
+for (const application of ["merchant", "free"]) {
+  const dir = path.join(output, application);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "index.html"),
+    `<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0;url=../#/choose">
+<title>واصل — التاجر والتوصيل الحر</title></head>
+<body><a href="../#/choose">الدخول إلى تطبيق التاجر والتوصيل الحر</a></body></html>
+`,
+  );
+  fs.copyFileSync("src/retired-entry-worker.js", path.join(dir, "sw.js"));
+}
+
 if (pages) {
   // Pages publishes main/root. Only copy generated output inside this repository.
   const files = filesIn(output).map((file) =>
@@ -63,12 +78,7 @@ if (pages) {
   fs.writeFileSync(".nojekyll", "");
   const currentAssets = new Set(files);
   let removed = 0;
-  for (const folder of [
-    "assets",
-    "merchant/assets",
-    "free/assets",
-    "courier/assets",
-  ]) {
+  for (const folder of ["assets", "courier/assets"]) {
     for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
       const file = `${folder}/${entry.name}`;
       if (
@@ -79,6 +89,19 @@ if (pages) {
         fs.unlinkSync(path.resolve(file));
         removed++;
       }
+    }
+  }
+  // Remove only the generated files from the retired builds, within this checkout.
+  for (const application of ["merchant", "free"]) {
+    const dir = path.resolve(application);
+    if (path.dirname(dir) !== process.cwd())
+      throw Error("Invalid retired application path");
+    for (const entry of fs.readdirSync(dir)) {
+      if (["index.html", "sw.js"].includes(entry)) continue;
+      const target = path.resolve(dir, entry);
+      if (path.dirname(target) !== dir)
+        throw Error("Invalid retired output path");
+      fs.rmSync(target, { recursive: true, force: true });
     }
   }
   console.log(`Removed ${removed} obsolete Pages bundles`);

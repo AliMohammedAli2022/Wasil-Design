@@ -2,14 +2,10 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "node:path";
 export default defineConfig(({ mode }) => {
-  const application = ["merchant", "free", "courier"].includes(mode)
-    ? mode
-    : "";
+  const application = mode === "courier" ? "courier" : "";
   const courier = application === "courier";
   const pages = process.env.PAGES_BUILD === "1";
   const appName = {
-    merchant: "واصل — التاجر",
-    free: "واصل — التوصيل الحر",
     courier: "واصل — المندوب",
     "": "واصل — التاجر والتوصيل الحر",
   }[application];

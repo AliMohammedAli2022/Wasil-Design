@@ -8,7 +8,7 @@ import { termsConsent } from "./services/termsConsent.js";
 import { parseRoute, routeHash } from "./services/routes.js";
 
 const application = currentApplication();
-const entryPage = application.defaultAccount ? "login" : "register";
+const entryPage = "login";
 const accepted = ref(Boolean(termsConsent.read(application.id)));
 const storageNotice = ref("");
 const portal = ref(
